@@ -7,4 +7,4 @@
 !*.sln
 !.gitignore
 !Assets/*
-!*.vcxproj.*
+!*.vcxproj*
