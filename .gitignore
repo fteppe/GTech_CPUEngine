@@ -8,3 +8,4 @@
 !.gitignore
 !Assets/*
 !*.vcxproj*
+!*.inl
