@@ -1,0 +1,10 @@
+*
+!*/
+!Libs/SDL3/lib/x64/*
+!*.cpp
+!*.hpp
+!*.h
+!*.sln
+!.gitignore
+!Assets/*
+!*.vcxproj.*
