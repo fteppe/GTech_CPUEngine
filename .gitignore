@@ -9,3 +9,4 @@
 !Assets/*
 !*.vcxproj*
 !*.inl
+!CMakeLists.txt
