@@ -117,7 +117,9 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.,1.,0.), frameBufferOut);
+	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.,1.,0.), 0xFFFFFF, frameBufferOut);
+	RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), 0xFF00FF, frameBufferOut);
+	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), 0x0000FF, frameBufferOut);
 
 }
 

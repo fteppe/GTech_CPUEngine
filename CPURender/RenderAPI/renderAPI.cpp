@@ -31,7 +31,7 @@ bool pointInTriangle (glm::ivec3 pt, glm::ivec3  v1, glm::ivec3  v2, glm::ivec3 
 	return !(has_neg && has_pos);
 }
 
-void RenderAPI::drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, FinalFrameBuffer &frameBuffer) {
+void RenderAPI::drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, uint32_t color, FinalFrameBuffer &frameBuffer) {
 
 	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
 	glm::vec3 maxBox = glm::max(glm::max(v1, v2), v3);
@@ -47,13 +47,13 @@ void RenderAPI::drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, FinalFram
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
 
-	for (int i = iMinBox.x; i < iMaxBox.y; i++) {
+	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
 		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
 			glm::ivec3 point(i,j,0);
 
 			if (pointInTriangle(point, iv1, iv2, iv3))
 			{
-				frameBuffer.put_pixel(i,j,0xFFFFFF);
+				frameBuffer.put_pixel(i,j,color);
 			}
 		}
 	}
