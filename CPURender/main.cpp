@@ -8,117 +8,117 @@
 
 /* Main function */
 int main(void) {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_Texture *texture;
-    SDL_Event event;
+	SDL_Window *window;
+	SDL_Renderer *renderer;
+	SDL_Texture *texture;
+	SDL_Event event;
 
-    const double target_frame = 1.0 / 60.0;
+	const double target_frame = 1.0 / 60.0;
 
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
-        return EXIT_FAILURE;
-    }
+	if (!SDL_Init(SDL_INIT_VIDEO)) {
+		fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
+		return EXIT_FAILURE;
+	}
 
-    window = SDL_CreateWindow(
-        "Framebuffer",
-        WIDTH * 2,
-        HEIGHT * 2,
-        0
-    );
+	window = SDL_CreateWindow(
+		"Framebuffer",
+		WIDTH * 2,
+		HEIGHT * 2,
+		SDL_WINDOW_RESIZABLE
+	);
 
-    if (window == NULL) {
-        fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
+	if (window == NULL) {
+		fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+		SDL_Quit();
+		return EXIT_FAILURE;
+	}
 
-    renderer = SDL_CreateRenderer(
-        window,
-        NULL
-    );
+	renderer = SDL_CreateRenderer(
+		window,
+		NULL
+	);
 
-    if (renderer == NULL) {
-        fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
+	if (renderer == NULL) {
+		fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
 
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+		SDL_DestroyWindow(window);
+		SDL_Quit();
 
-        return EXIT_FAILURE;
-    }
+		return EXIT_FAILURE;
+	}
 
-    texture = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_XRGB8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        WIDTH,
-        HEIGHT
-    );
+	texture = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_XRGB8888,
+		SDL_TEXTUREACCESS_STREAMING,
+		WIDTH,
+		HEIGHT
+	);
 
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
-    if (texture == NULL) {
-        fprintf(stderr, "SDL_CreateTexture failed: %s\n", SDL_GetError());
+	if (texture == NULL) {
+		fprintf(stderr, "SDL_CreateTexture failed: %s\n", SDL_GetError());
 
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
 
-        return EXIT_FAILURE;
-    }
+		return EXIT_FAILURE;
+	}
 
-    Engine engine;
-    engine.init();
-    bool isRunning = true;
-    uint32_t frame = 1;
-    FinalFrameBuffer frameBuffer;
-    
+	Engine engine;
+	engine.init();
+	bool isRunning = true;
+	uint32_t frame = 1;
+	FinalFrameBuffer frameBuffer;
 
-    /* Frame loop */
-    while (isRunning) {
-        uint64_t start = SDL_GetPerformanceCounter();
 
-        /* Poll events */
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                isRunning = false;
-            }
-            engine.handleEvent(event);
-        }
+	/* Frame loop */
+	while (isRunning) {
+		uint64_t start = SDL_GetPerformanceCounter();
 
-        engine.renderFrame(frameBuffer);
+		/* Poll events */
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_EVENT_QUIT) {
+				isRunning = false;
+			}
+			engine.handleEvent(event);
+		}
 
-        /* Copy contents of the framebuffer to our SDL texture */
-        SDL_UpdateTexture(
-            texture,
-            NULL,
-            &frameBuffer.colorData,
-            WIDTH * sizeof(uint32_t)
-        );
+		engine.renderFrame(frameBuffer);
 
-        /* Render texture and display the renderer */
-        SDL_RenderClear(renderer);
-        SDL_RenderTexture(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
+		/* Copy contents of the framebuffer to our SDL texture */
+		SDL_UpdateTexture(
+			texture,
+			NULL,
+			&frameBuffer.colorData,
+			WIDTH * sizeof(uint32_t)
+		);
 
-        uint64_t end = SDL_GetPerformanceCounter();
+		/* Render texture and display the renderer */
+		SDL_RenderClear(renderer);
+		SDL_RenderTexture(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
 
-        double elapsed = (double)(end - start) / (double)SDL_GetPerformanceFrequency();
+		uint64_t end = SDL_GetPerformanceCounter();
 
-        /* Cap the framerate to 60 FPS (16 milliseconds each frame) */
-        if (elapsed < target_frame) {
-            SDL_Delay((uint32_t)((target_frame - elapsed) * 1000.0));
-        }
+		double elapsed = (double)(end - start) / (double)SDL_GetPerformanceFrequency();
 
-        frame++;
-    }
+		/* Cap the framerate to 60 FPS (16 milliseconds each frame) */
+		if (elapsed < target_frame) {
+			SDL_Delay((uint32_t)((target_frame - elapsed) * 1000.0));
+		}
 
-    engine.destroy();
-    /* Free all the SDL resources we created */
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+		frame++;
+	}
 
-    return EXIT_SUCCESS;
+	engine.destroy();
+	/* Free all the SDL resources we created */
+	SDL_DestroyTexture(texture);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
+
+	return EXIT_SUCCESS;
 }
