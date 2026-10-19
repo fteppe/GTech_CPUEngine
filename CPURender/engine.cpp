@@ -7,6 +7,8 @@
 #include "stb_image.h"
 #include <vector>
 #include <glm/mat4x4.hpp>
+
+#include "baseTypes/color.h"
 #include "RenderAPI/renderAPI.h"
 
 
@@ -117,9 +119,9 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.,1.,0.), 0xFFFFFF, frameBufferOut);
-	RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), 0xFF00FF, frameBufferOut);
-	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), 0x0000FF, frameBufferOut);
+	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.,1.,0.), colors::WHITE, frameBufferOut);
+	RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), colors::RED, frameBufferOut);
+	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), colors::GREEN, frameBufferOut);
 
 }
 
