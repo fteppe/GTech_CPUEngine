@@ -2,6 +2,7 @@
 
 #include "../main.h"
 #include "glm/common.hpp"
+#include "glm/geometric.hpp"
 #include "glm/vec2.hpp"
 
 static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 ScreenDims) {
@@ -31,6 +32,23 @@ bool pointInTriangle (glm::ivec3 pt, glm::ivec3  v1, glm::ivec3  v2, glm::ivec3 
 	return !(has_neg && has_pos);
 }
 
+template<typename TComponent>
+static float areaOfTriangle(glm::vec<3, TComponent> v1, glm::vec<3, TComponent> v2, glm::vec<3, TComponent> v3) {
+	glm::vec<3,TComponent> A = v2-v1;
+	glm::vec<3,TComponent> B = v3-v1;
+
+	const float area = .5f * glm::length(glm::cross(A, B));
+	return area;
+}
+
+template<typename TComponent>
+static glm::vec3 getBarycentricCoord(glm::vec<3, TComponent> v1, glm::vec<3, TComponent> v2, glm::vec<3, TComponent> v3, glm::vec<3, TComponent> point) {
+	float totalTriangleArea = areaOfTriangle(v1, v2, v3);
+	float lambda1 = areaOfTriangle(v3, point, v2) / totalTriangleArea;
+	float lambda2 = areaOfTriangle(v3, point, v1) / totalTriangleArea;
+	return {lambda1, lambda2, 1 - (lambda1 + lambda2)};
+}
+
 void RenderAPI::drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, uint32_t color, FinalFrameBuffer &frameBuffer) {
 
 	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
@@ -50,12 +68,37 @@ void RenderAPI::drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, uint32_t 
 	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
 		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
 			glm::ivec3 point(i,j,0);
+			glm::vec3 floatingPoint(float(i)/WIDTH, float(j)/HEIGHT, 0);
 
 			if (pointInTriangle(point, iv1, iv2, iv3))
 			{
-				frameBuffer.put_pixel(i,j,color);
+				glm::vec3 baryCentricCoord = getBarycentricCoord(v1, v2, v3, floatingPoint);
+				frameBuffer.put_pixel(i,j,Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z));
 			}
 		}
 	}
+}
 
+void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
+	glm::ivec2 screenDims(WIDTH, HEIGHT);
+
+	glm::ivec3 screenSpaceStart = setToScreenSpace(glm::vec3(clipPos,1.), screenDims);
+
+	auto& texturePtr = this->textures[textureHandle];
+
+	for (int x = 0; x < texturePtr->size.x; x++) {
+		for (int y = 0; y < texturePtr->size.y; y++) {
+			int posX = x + screenSpaceStart.x;
+			int posY = y + screenSpaceStart.y;
+			frameBuffer.put_pixel(posX, posY, texturePtr->getData(glm::ivec3(x,y,0)));
+		}
+	}
+}
+
+ResourceHandle<renderResource::Texture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
+	assert(dims.x * dims.y == textureData.size());
+	auto texturePtr = std::make_unique<renderResource::Texture>(dims, textureData);
+	auto handle = this->createHandle<renderResource::Texture>();
+	this->textures.emplace(handle, std::move(texturePtr));
+	return handle;
 }

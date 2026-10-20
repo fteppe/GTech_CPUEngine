@@ -1,0 +1,1 @@
+target_sources(CPURender PRIVATE texture.cpp)

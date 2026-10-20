@@ -5,12 +5,14 @@ struct Color {
 public:
 
 	union {
+		//To respect the convention where writing a color is 0x __(red)__(green)__(blue)
+		//The components are placed in the order b g r a in memory because we have a little endian architecture
 		uint32_t rgba;
 		struct {
-			uint8_t r, g, b, a;
+			uint8_t b , g , r, a;
 		};
 	};
-
+	constexpr Color() : rgba(0) {}
 	//constexpr  Color(float r, float g, float b, float a = 1.0) : r(r * 255), g(g * 255), b(b * 255), a(a * 255) {}
 	static constexpr Color fromUNorm(float r, float g, float b, float a = 1.0) {return Color(r * 255,g * 255,b * 255,a * 255);}
 	constexpr Color(uint32_t rgba) : rgba(rgba) {}

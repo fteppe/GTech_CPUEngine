@@ -32,10 +32,9 @@ static const uint32_t fire_palette[FIRE_PALETTE_SIZE] = {
 
 struct PixelData {
 	int width, height;
-	std::vector<uint32_t> imageData;
+	std::vector<Color> imageData;
 };
 
-static PixelData doomFace;
 
 void resetFire() {
 	/* Fire initialization */
@@ -49,25 +48,29 @@ void resetFire() {
 	}
 }
 
-void Engine::init() {
-	printf("Init engine \n");
-	static int nbrChannel;
-	unsigned char *data = stbi_load("Assets/doomguy.png", &doomFace.width, &doomFace.height, &nbrChannel, 4);
+void Engine::init(SDL_Window* windowIn) {
 
+	printf("Init engine \n");
+	window = windowIn;
+	PixelData doomFace;
+	int nbrChannel;
+	unsigned char *data = stbi_load("Assets/doomguy.png", &doomFace.width, &doomFace.height, &nbrChannel, 4);
 	doomFace.imageData.resize(doomFace.width * doomFace.height);
 
 	//We copy the texture data in a format we can use
 	for (int i = 0; i < doomFace.width; ++i) {
 		for (int j = 0; j < doomFace.height; ++j) {
-			uint32_t colorValue = 0;
+			Color colorValue;
 			int linearized2D = i + j * doomFace.width;
-			colorValue = colorValue | (uint32_t(data[0 + linearized2D * nbrChannel]) << 16);
+			colorValue.r = data[0 + linearized2D * nbrChannel];
 			//First channel is Red, highest weight bits
-			colorValue = colorValue | (uint32_t(data[1 + linearized2D * nbrChannel]) << 8); //Then green
-			colorValue = colorValue | (uint32_t(data[2 + linearized2D * nbrChannel]) << 0); //Finally blue
+			colorValue.g = data[1 + linearized2D * nbrChannel]; //Then green
+			colorValue.b =data[2 + linearized2D * nbrChannel];
 			doomFace.imageData[linearized2D] = colorValue;
 		}
 	}
+
+	doomHead = renderAPI.createTexture(glm::ivec2(doomFace.width, doomFace.height), doomFace.imageData);
 	free(data);
 	resetFire();
 }
@@ -78,6 +81,28 @@ void Engine::handleEvent(const SDL_Event &event) {
 			//We reset the fire on space bar down
 			resetFire();
 		}
+		switch (event.key.key) {
+			case SDLK_UP:
+				doomHeadPos.y--;
+				break;
+			case SDLK_DOWN:
+				doomHeadPos.y++;
+				break;
+			case SDLK_LEFT:
+				doomHeadPos.x--;
+				break;
+			case SDLK_RIGHT:
+				doomHeadPos.x++;
+				break;
+		}
+	}
+	if (event.type == SDL_EVENT_MOUSE_MOTION) {
+		float x,y;
+		SDL_GetMouseState(&x, &y);
+		int windowX, windowY;
+		SDL_GetWindowSize(window, &windowX, &windowY);
+		doomHeadPos.x = x/(float(windowX) / WIDTH);
+		doomHeadPos.y = y/(float(windowY) / HEIGHT);
 	}
 }
 
@@ -102,14 +127,10 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	//draws the doomguy face texture at the center of the screen
-	for (int x = 0; x < doomFace.width; x++) {
-		for (int y = 0; y < doomFace.height; y++) {
-			int posX = (WIDTH / 2 - doomFace.width / 2) + x;
-			int posY = (HEIGHT / 2 - doomFace.height / 2) + y;
-			frameBufferOut.put_pixel(posX, posY, doomFace.imageData[x + y * doomFace.width]);
-		}
-	}
+
+	glm::vec2 doomHeadPosClipspace = {float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT};
+	renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
+
 	/* Fire render */
 	for (int y = 0; y < FIRE_H; y++) {
 		for (int x = 0; x < FIRE_W; x++) {
@@ -120,12 +141,13 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	}
 
 	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.,1.,0.), colors::WHITE, frameBufferOut);
-	RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), colors::RED, frameBufferOut);
-	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), colors::GREEN, frameBufferOut);
+	// RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), colors::RED, frameBufferOut);
+	// RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), colors::GREEN, frameBufferOut);
+
+
 
 }
 
 void Engine::destroy() {
-	doomFace.imageData = std::vector<uint32_t>();
 	printf("Killing engine \n");
 }

@@ -68,7 +68,7 @@ int main(void) {
 	}
 
 	Engine engine;
-	engine.init();
+	engine.init(window);
 	bool isRunning = true;
 	uint32_t frame = 1;
 	FinalFrameBuffer frameBuffer;

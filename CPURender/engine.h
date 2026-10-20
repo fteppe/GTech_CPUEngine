@@ -1,13 +1,22 @@
 #pragma once
 
 #include "main.h"
+#include "RenderAPI/renderAPI.h"
+#include "RenderAPI/resourceHandle.h"
+
+namespace renderResource {
+	class Texture;
+}
 //Students can change whetever they want in this file
 
 union SDL_Event;
+struct SDL_Window;
 
 struct Engine {
+public:
+	Engine() = default;
 
-	void init();
+	void init(SDL_Window *window);
 
 	void handleEvent(const SDL_Event& event);
 
@@ -15,4 +24,11 @@ struct Engine {
 
 	void destroy();
 
+	RenderAPI renderAPI;
+	ResourceHandle<renderResource::Texture> doomHead;
+
+	glm::ivec2 doomHeadPos = glm::ivec2(0);
+
+
+	SDL_Window* window = nullptr;
 };
