@@ -9,6 +9,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "baseTypes/color.h"
+#include "RenderAPI/drawCommand.h"
 #include "RenderAPI/renderAPI.h"
 
 
@@ -128,8 +129,9 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	}
 
 
-	glm::vec2 doomHeadPosClipspace = {float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT};
-	renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
+	glm::vec2 doomHeadPosClipspace = glm::vec2(float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT) * 2.f - 1.f;
+	doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
+	//renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
 
 	/* Fire render */
 	for (int y = 0; y < FIRE_H; y++) {
@@ -140,7 +142,21 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.,1.,0.), colors::WHITE, frameBufferOut);
+	DrawCommand command1;
+	command1.triToDraw.pos = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.)};
+	command1.triToDraw.uv = {glm::vec2(0.,0.), {0.,1.}, {1.,1}};
+	command1.bindedTexture = doomHead;
+
+
+	DrawCommand command2;
+	command2.triToDraw.pos = {glm::vec3(-0.5, -0.5,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,-0.5,0.)};
+	command2.triToDraw.uv = {glm::vec2(0.,0.), {1.,1.}, {1.,0}};
+	command2.bindedTexture = doomHead;
+	command1.triToDraw.pos[2] = glm::vec3(doomHeadPosClipspace, 0.);
+	command2.triToDraw.pos[1] = command1.triToDraw.pos[2];
+	renderAPI.draw(command1, frameBufferOut);
+	renderAPI.draw(command2, frameBufferOut);
+
 	// RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), colors::RED, frameBufferOut);
 	// RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), colors::GREEN, frameBufferOut);
 

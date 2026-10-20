@@ -6,7 +6,7 @@ class ResourceHandle {
 	size_t resourceId;
 public:
 	ResourceHandle() : resourceId(-1) {}
-
+	bool isValid() const {return resourceId != -1;}
 	bool operator==(const ResourceHandle & right) const {return resourceId == right.resourceId;}
 private:
 	friend struct std::hash<ResourceHandle>;

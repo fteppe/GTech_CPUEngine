@@ -7,13 +7,14 @@
 #include "glm/vec2.hpp"
 #include "RenderResources/texture.h"
 
+class DrawCommand;
 struct FinalFrameBuffer;
 
 class RenderAPI {
 	public:
 	static void drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, uint32_t color, FinalFrameBuffer& frameBuffer);
 	void drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer);
-
+	void draw(const DrawCommand& drawCommand, FinalFrameBuffer& frameBuffer);
 	ResourceHandle<renderResource::Texture> createTexture(glm::ivec2 dims, const std::vector<Color>& textureData);
 
 protected:

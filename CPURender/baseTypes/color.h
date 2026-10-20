@@ -25,4 +25,6 @@ namespace colors {
 	static constexpr Color BLUE = Color(0,0,255);
 	static constexpr Color RED = Color(255,0,0);
 	static constexpr Color GREEN = Color(0,255,0);
+	static constexpr Color YELLOW = Color(255,255,0);
+	static constexpr Color PINK = Color(255,0,255);
 }

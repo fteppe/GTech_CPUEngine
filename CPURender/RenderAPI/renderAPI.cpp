@@ -1,15 +1,20 @@
 #include "renderAPI.h"
 
+#include "drawCommand.h"
 #include "../main.h"
 #include "glm/common.hpp"
 #include "glm/geometric.hpp"
 #include "glm/vec2.hpp"
 
-static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 ScreenDims) {
+static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 screenDims) {
 	glm::ivec3 screenSpace;
-	screenSpace.x = ScreenDims.x * clipSpace.x;
-	screenSpace.y = ScreenDims.y * clipSpace.y;
+	screenSpace.x = screenDims.x * (clipSpace.x * .5 + 0.5);
+	screenSpace.y = screenDims.y * (clipSpace.y * .5 + 0.5);
 	return screenSpace;
+}
+
+static glm::vec3 fromScreenToClip(glm::ivec3 screenSpace, glm::ivec2 screenDims) {
+	return glm::vec3(((float(screenSpace.x) / screenDims.x)-0.5) * 2.0,  ((float(screenSpace.y) / screenDims.y)-0.5) * 2.0, screenSpace.z);
 }
 
 int sign (glm::ivec3 p1, glm::ivec3 p2, glm::ivec3 p3)
@@ -49,35 +54,7 @@ static glm::vec3 getBarycentricCoord(glm::vec<3, TComponent> v1, glm::vec<3, TCo
 	return {lambda1, lambda2, 1 - (lambda1 + lambda2)};
 }
 
-void RenderAPI::drawTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, uint32_t color, FinalFrameBuffer &frameBuffer) {
 
-	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
-	glm::vec3 maxBox = glm::max(glm::max(v1, v2), v3);
-
-	minBox = glm::clamp(minBox, glm::vec3(0.), glm::vec3(1.));
-	maxBox = glm::clamp(maxBox, glm::vec3(0.), glm::vec3(1.));
-
-	glm::ivec2 screenDims(WIDTH, HEIGHT);
-
-	glm::ivec3 iv1 = setToScreenSpace(v1, screenDims);
-	glm::ivec3 iv2 = setToScreenSpace(v2, screenDims);
-	glm::ivec3 iv3 = setToScreenSpace(v3, screenDims);
-	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
-	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
-
-	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
-		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
-			glm::ivec3 point(i,j,0);
-			glm::vec3 floatingPoint(float(i)/WIDTH, float(j)/HEIGHT, 0);
-
-			if (pointInTriangle(point, iv1, iv2, iv3))
-			{
-				glm::vec3 baryCentricCoord = getBarycentricCoord(v1, v2, v3, floatingPoint);
-				frameBuffer.put_pixel(i,j,Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z));
-			}
-		}
-	}
-}
 
 void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
 	glm::ivec2 screenDims(WIDTH, HEIGHT);
@@ -91,6 +68,58 @@ void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHan
 			int posX = x + screenSpaceStart.x;
 			int posY = y + screenSpaceStart.y;
 			frameBuffer.put_pixel(posX, posY, texturePtr->getData(glm::ivec3(x,y,0)));
+		}
+	}
+}
+template<typename T>
+static T interpolate(T a, T b , T c, glm::vec3 lambda) {
+	return a * lambda.x + b * lambda.y + c * lambda.z;
+}
+
+void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuffer) {
+
+	glm::vec3 v1 = drawCommand.triToDraw.pos[0];
+	glm::vec3 v2 = drawCommand.triToDraw.pos[1];
+	glm::vec3 v3 = drawCommand.triToDraw.pos[2];
+
+	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
+	glm::vec3 maxBox = glm::max(glm::max(v1, v2), v3);
+
+	minBox = glm::clamp(minBox, glm::vec3(-1.), glm::vec3(1.));
+	maxBox = glm::clamp(maxBox, glm::vec3(-1.), glm::vec3(1.));
+
+	glm::ivec2 screenDims(WIDTH, HEIGHT);
+
+	glm::ivec3 iv1 = setToScreenSpace(v1, screenDims);
+	glm::ivec3 iv2 = setToScreenSpace(v2, screenDims);
+	glm::ivec3 iv3 = setToScreenSpace(v3, screenDims);
+	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
+	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
+
+	renderResource::Texture* texture = nullptr;
+	if (drawCommand.bindedTexture.isValid())
+	{
+		texture = this->textures[drawCommand.bindedTexture].get();
+	}
+
+	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
+		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
+			glm::ivec3 point(i,j,0);
+			glm::vec3 floatingPoint = fromScreenToClip(glm::vec3(i,j,0), screenDims);
+
+			if (pointInTriangle(point, iv1, iv2, iv3))
+			{
+				glm::vec3 baryCentricCoord = getBarycentricCoord(v1, v2, v3, floatingPoint);
+				glm::vec2 interpolatedUV = interpolate(drawCommand.triToDraw.uv[0],drawCommand.triToDraw.uv[1],drawCommand.triToDraw.uv[2], baryCentricCoord);
+				Color pixelColor = colors::PINK;
+				if (texture) {
+					pixelColor = texture->sample(glm::vec3(interpolatedUV, 0.));
+				}
+				frameBuffer.put_pixel(i,HEIGHT - j,pixelColor);
+				//frameBuffer.put_pixel(i,HEIGHT - j,Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.));
+				//frameBuffer.put_pixel(i,HEIGHT - j,Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z));
+
+			}
 		}
 	}
 }
