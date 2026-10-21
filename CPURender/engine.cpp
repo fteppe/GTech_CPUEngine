@@ -7,6 +7,8 @@
 #include "stb_image.h"
 #include <vector>
 #include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 
 #include "baseTypes/color.h"
 #include "RenderAPI/drawCommand.h"
@@ -75,8 +77,8 @@ void Engine::init(SDL_Window* windowIn) {
 	doomHead = renderAPI.createTexture(glm::ivec2(doomFace.width, doomFace.height), doomFace.imageData);
 	quadMesh = renderAPI.createVertexBuffer(
 //positions
-{glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.),
-	glm::vec3(-0.5, -0.5,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,-0.5,0.)},
+{glm::vec3(-0.5, -0.5,0.1), glm::vec3(-0.5, 0.5, 0.1), glm::vec3(0.5,0.5,0.1),
+	glm::vec3(-0.5, -0.5,0.1), glm::vec3(0.5, 0.5, 0.1), glm::vec3(0.5,-0.5,0.1)},
 			//UVs
 {glm::vec2(0.,0.), {0.,1.}, {1.,1},
 			glm::vec2(0.,0.), {1.,1.}, {1.,0}});
@@ -143,7 +145,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::vec2 doomHeadPosClipspace = glm::vec2(float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT) * 2.f - 1.f;
 	//doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
 	//renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
-	renderAPI.clearRenderContext(colors::BLACK, Depth(), context);
+	renderAPI.clearRenderContext(colors::WHITE, Depth(), context);
 
 	/* Fire render */
 	for (int y = 0; y < FIRE_H; y++) {
@@ -153,12 +155,13 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 				frameBufferOut.put_pixel(x, y, fire_palette[idx]);
 		}
 	}
-	renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.),  glm::vec3(doomHeadPosClipspace,.0),
-	glm::vec3(-0.5, -0.5,0.), glm::vec3(doomHeadPosClipspace,.0), glm::vec3(0.5,-0.5,0.)}, 0);
+
+	glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
+
+	renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
 	command1.vertexBuffer = quadMesh;
-
 
 	renderAPI.draw(command1, context);
 

@@ -6,6 +6,9 @@
 #include "glm/common.hpp"
 #include "glm/geometric.hpp"
 #include "glm/vec2.hpp"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "RenderResources/resolvedDrawCommand.h"
 #include "RenderResources/ColorTexture.h"
 #include "RenderResources/vertexBuffer.h"
@@ -42,19 +45,18 @@ bool pointInTriangle (glm::ivec3 pt, glm::ivec3  v1, glm::ivec3  v2, glm::ivec3 
 }
 
 template<typename TComponent>
-static float areaOfTriangle(glm::vec<3, TComponent> v1, glm::vec<3, TComponent> v2, glm::vec<3, TComponent> v3) {
-	glm::vec<3,TComponent> A = v2-v1;
-	glm::vec<3,TComponent> B = v3-v1;
+static float areaOfTriangle(glm::vec<2, TComponent> v1, glm::vec<2, TComponent> v2, glm::vec<2, TComponent> v3) {
+	glm::vec<3,TComponent> A(v2-v1, 0.);
+	glm::vec<3,TComponent> B(v3-v1, 0.);
 
 	const float area = .5f * glm::length(glm::cross(A, B));
 	return area;
 }
 
 template<typename TComponent>
-static glm::vec3 getBarycentricCoord(glm::vec<3, TComponent> v1, glm::vec<3, TComponent> v2, glm::vec<3, TComponent> v3, glm::vec<3, TComponent> point) {
-	float totalTriangleArea = areaOfTriangle(v1, v2, v3);
-	float lambda1 = areaOfTriangle(v3, point, v2) / totalTriangleArea;
-	float lambda2 = areaOfTriangle(v3, point, v1) / totalTriangleArea;
+static glm::vec3 getBarycentricCoord(glm::vec<2, TComponent> v1, glm::vec<2, TComponent> v2, glm::vec<2, TComponent> v3, glm::vec<2, TComponent> point, float areaTriangleInv) {
+	float lambda1 = areaOfTriangle(v3, point, v2) * areaTriangleInv;
+	float lambda2 = areaOfTriangle(v3, point, v1) * areaTriangleInv;
 	return {lambda1, lambda2, 1 - (lambda1 + lambda2)};
 }
 
@@ -99,8 +101,10 @@ static T interpolate(T a, T b , T c, glm::vec3 lambda) {
 	return a * lambda.x + b * lambda.y + c * lambda.z;
 }
 
-void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
+static float rotation = 0.f;
 
+void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
+	rotation += 0.5f;
 	renderResource::ResolvedDrawCommand resolvedCommand;
 	if (drawCommand.bindedTexture.isValid())
 	{
@@ -175,6 +179,24 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	glm::vec3 v2 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 1, 0);
 	glm::vec3 v3 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 2, 0);
 
+
+	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
+	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 5.f);
+	glm::mat4 object(1.);
+	object = rotate(object, rotation * 0.01f, {0.,1.,0.});
+	glm::mat4 mvp = projection * view * object;
+	glm::vec4 v1_4 = mvp * glm::vec4(v1, 1.);
+	glm::vec4 v2_4 = mvp * glm::vec4(v2, 1.);
+	glm::vec4 v3_4 = mvp * glm::vec4(v3, 1.);
+	v1 = glm::vec3(v1_4.x, v1_4.y, v1_4.z) / v1_4.w;
+	v2 = glm::vec3(v2_4.x, v2_4.y, v2_4.z) / v2_4.w;
+	v3 = glm::vec3(v3_4.x, v3_4.y, v3_4.z) / v3_4.w;
+	glm::vec3 invDepths = {1.f/v1_4.z, 1.f/v2_4.z, 1.f/v3_4.z};
+
+	glm::vec2 v1_2d = {v1.x, v1.y};
+	glm::vec2 v2_2d = {v2.x, v2.y};
+	glm::vec2 v3_2d = {v3.x, v3.y};
+
 	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
 	glm::vec3 maxBox = glm::max(glm::max(v1, v2), v3);
 
@@ -188,20 +210,27 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	glm::ivec3 iv3 = setToScreenSpace(v3, screenDims);
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
-
+	float triangleAreaInv = 1 / areaOfTriangle(v1_2d, v2_2d, v3_2d);
 	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
 		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
 			glm::ivec3 point(i,j,0);
-			glm::vec3 floatingPoint = fromScreenToClip(glm::vec3(i,j,0), screenDims);
+			glm::vec2 floatingPoint = fromScreenToClip(glm::vec3(i,j,0), screenDims);
 
 			if (pointInTriangle(point, iv1, iv2, iv3))
 			{
-				glm::vec3 baryCentricCoord = getBarycentricCoord(v1, v2, v3, floatingPoint);
+				glm::vec3 baryCentricCoord = getBarycentricCoord(v1_2d, v2_2d, v3_2d, floatingPoint, triangleAreaInv);
+				float gamma = baryCentricCoord.x * invDepths.x + baryCentricCoord.y * invDepths.y + baryCentricCoord.z * invDepths.z;
+				float gammaInv = 1 / gamma;
+				glm::vec3 depthCorrectedCoord = {
+					baryCentricCoord.x * invDepths.x * gammaInv,
+					baryCentricCoord.y * invDepths.y * gammaInv,
+					baryCentricCoord.z * invDepths.z * gammaInv
+				};
 				glm::vec2 uv1 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex, 1);
 				glm::vec2 uv2 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex + 1, 1);
 				glm::vec2 uv3 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex + 2, 1);
 
-				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, baryCentricCoord);
+				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, depthCorrectedCoord);
 				Color pixelColor = colors::PINK;
 				if (command.texture) {
 					pixelColor = command.texture->sample(glm::vec3(interpolatedUV, 0.));
