@@ -5,7 +5,7 @@
 #include "RenderAPI/resourceHandle.h"
 
 namespace renderResource {
-	class Texture;
+	class ColorTexture;
 }
 //Students can change whetever they want in this file
 
@@ -25,9 +25,9 @@ public:
 	void destroy();
 
 	RenderAPI renderAPI;
-	ResourceHandle<renderResource::Texture> doomHead;
+	ResourceHandle<renderResource::ColorTexture> doomHead;
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
-
+	ResourceHandle<renderResource::Texture> frameBuffer;
 	glm::ivec2 doomHeadPos = glm::ivec2(0);
 
 

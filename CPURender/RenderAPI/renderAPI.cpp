@@ -1,12 +1,13 @@
 #include "renderAPI.h"
 
 #include "drawCommand.h"
+#include "drawContext.h"
 #include "../main.h"
 #include "glm/common.hpp"
 #include "glm/geometric.hpp"
 #include "glm/vec2.hpp"
 #include "RenderResources/resolvedDrawCommand.h"
-#include "RenderResources/texture.h"
+#include "RenderResources/ColorTexture.h"
 #include "RenderResources/vertexBuffer.h"
 
 static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 screenDims) {
@@ -64,7 +65,7 @@ RenderAPI::RenderAPI() {
 RenderAPI::~RenderAPI() {
 }
 
-void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
+void RenderAPI::drawTextureAt(ResourceHandle<renderResource::ColorTexture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
 	glm::ivec2 screenDims(WIDTH, HEIGHT);
 
 	glm::ivec3 screenSpaceStart = setToScreenSpace(glm::vec3(clipPos,1.), screenDims);
@@ -79,12 +80,26 @@ void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHan
 		}
 	}
 }
+
+void RenderAPI::clearRenderContext(Color defaultColor, Depth defaultDepth, DrawContext &drawContext) {
+	renderResource::ResolvedDrawContext resolvedDrawContext;
+	resolvedDrawContext.config = drawContext.config;
+	if (drawContext.color.isValid()) {
+		resolvedDrawContext.color = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[drawContext.color].get());
+		resolvedDrawContext.color->fillT(defaultColor);
+	}
+	if (drawContext.depth.isValid()) {
+		resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.color].get());
+		resolvedDrawContext.depth->fillT(defaultDepth);
+	}
+}
+
 template<typename T>
 static T interpolate(T a, T b , T c, glm::vec3 lambda) {
 	return a * lambda.x + b * lambda.y + c * lambda.z;
 }
 
-void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuffer) {
+void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
 
 	renderResource::ResolvedDrawCommand resolvedCommand;
 	if (drawCommand.bindedTexture.isValid())
@@ -92,22 +107,39 @@ void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuff
 		resolvedCommand.texture = this->textures[drawCommand.bindedTexture].get();
 	}
 	resolvedCommand.vertexBuffer = this->vertexBuffers[drawCommand.vertexBuffer].get();
-
-	draw(resolvedCommand, frameBuffer);
-
-
+	renderResource::ResolvedDrawContext resolvedDrawContext;
+	resolvedDrawContext.config = drawContext.config;
+	resolvedDrawContext.color = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[drawContext.color].get());
+	resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.depth].get());
+	draw(resolvedCommand, resolvedDrawContext);
 }
 
-ResourceHandle<renderResource::Texture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
+ResourceHandle<renderResource::ColorTexture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
 	assert(dims.x * dims.y == textureData.size());
-	auto texturePtr = std::make_unique<renderResource::Texture>(dims, textureData);
-	auto handle = this->createHandle<renderResource::Texture>();
+	auto texturePtr = std::make_unique<renderResource::ColorTexture>(dims, textureData);
+	auto handle = this->createHandle<renderResource::ColorTexture>();
 	this->textures.emplace(handle, std::move(texturePtr));
 	return handle;
 }
 
+TextureHandle RenderAPI::createFrameBuffer(glm::ivec2 dims, FrameBufferType type) {
+
+	std::unique_ptr<renderResource::Texture> frameBuffer;
+	auto handle = this->createHandle<renderResource::Texture>();
+	switch (type) {
+		case FrameBufferType::Color:
+			frameBuffer = std::make_unique<renderResource::ColorTexture>(dims);
+			break;
+		case FrameBufferType::Depth:
+			frameBuffer = std::make_unique<renderResource::DepthBuffer>(dims);
+			break;
+	}
+	this->frameBuffers.emplace(handle, std::move(frameBuffer));
+	return handle;
+}
+
 ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const std::vector<glm::vec3>& positions,
-	const std::vector<glm::vec2>& texCoords)
+                                                                           const std::vector<glm::vec2>& texCoords)
 {
 	assert(positions.size() == texCoords.size());
 	auto vertexBuffer = std::make_unique<renderResource::VertexBuffer>();
@@ -118,14 +150,25 @@ ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const
 	return handle;
 }
 
-void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, FinalFrameBuffer &frameBuffer) {
+void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrameBuffer &frameBuffer) {
+
+	auto texture = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[colorHandle].get());
+	// auto texture = this->textures[colorHandle].get();
+	for (int i = 0; i < WIDTH; i ++) {
+		for (int j = 0; j < HEIGHT; j ++) {
+			frameBuffer.put_pixel(i,j, texture->getData({i , j ,0}));
+		}
+	}
+}
+
+void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, renderResource::ResolvedDrawContext &drawContext) {
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
-		drawTriangle(drawCommand, iVert, frameBuffer);
+		drawTriangle(drawCommand, iVert, drawContext);
 	}
 }
 
 void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
-	FinalFrameBuffer &frameBuffer) {
+	renderResource::ResolvedDrawContext &drawContext) {
 
 
 	glm::vec3 v1 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex, 0);
@@ -163,9 +206,10 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 				if (command.texture) {
 					pixelColor = command.texture->sample(glm::vec3(interpolatedUV, 0.));
 				}
-				frameBuffer.put_pixel(i,HEIGHT - j,pixelColor);
-				//frameBuffer.put_pixel(i,HEIGHT - j,Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.));
-				//frameBuffer.put_pixel(i,HEIGHT - j,Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z));
+				//pixelColor = Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z);
+				//pixelColor = Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.);
+
+				drawContext.color->writeData({i, j, 0}, pixelColor);
 
 			}
 		}

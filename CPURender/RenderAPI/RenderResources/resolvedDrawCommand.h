@@ -2,12 +2,19 @@
 
 
 namespace renderResource {
+	class DepthBuffer;
 	class VertexBuffer;
-	class Texture;
+	class ColorTexture;
 
 	struct ResolvedDrawCommand {
 		const VertexBuffer* vertexBuffer;
-		const Texture* texture;
+		const ColorTexture* texture;
+	};
+
+	struct ResolvedDrawContext {
+		DrawContextConfig config;
+		ColorTexture* color;
+		DepthBuffer* depth;
 	};
 }
 

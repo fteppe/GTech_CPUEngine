@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <cstdint>
 
 struct Color {
@@ -19,6 +20,17 @@ public:
 	constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
 	operator uint32_t() const { return rgba; }
 };
+
+
+struct Depth {
+	uint32_t depth;
+	static constexpr float depthUnitValue = 1. / std::numeric_limits<uint32_t>::max();
+	constexpr Depth() : depth(0) {}
+	constexpr Depth(uint32_t depthIn) : depth(depthIn) {}
+	constexpr float to01() const {return depthUnitValue * depth;}
+	static constexpr Depth from01(float value) {return {uint32_t(std::floor(std::numeric_limits<uint32_t>::max() * value))};}
+};
+
 namespace colors {
 	static constexpr Color WHITE = Color(0xFFFFFF);
 	static constexpr Color BLACK = Color(0);

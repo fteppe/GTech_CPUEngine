@@ -10,6 +10,6 @@ struct Triangle {
 
 struct DrawCommand {
 	ResourceHandle<renderResource::VertexBuffer> vertexBuffer;
-	ResourceHandle<renderResource::Texture> bindedTexture;
+	ResourceHandle<renderResource::ColorTexture> bindedTexture;
 };
 

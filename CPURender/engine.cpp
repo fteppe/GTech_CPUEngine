@@ -10,6 +10,7 @@
 
 #include "baseTypes/color.h"
 #include "RenderAPI/drawCommand.h"
+#include "RenderAPI/drawContext.h"
 #include "RenderAPI/renderAPI.h"
 
 
@@ -79,6 +80,8 @@ void Engine::init(SDL_Window* windowIn) {
 			//UVs
 {glm::vec2(0.,0.), {0.,1.}, {1.,1},
 			glm::vec2(0.,0.), {1.,1.}, {1.,0}});
+
+	frameBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Color);
 	free(data);
 	resetFire();
 }
@@ -135,10 +138,12 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-
+	DrawContext context;
+	context.color = frameBuffer;
 	glm::vec2 doomHeadPosClipspace = glm::vec2(float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT) * 2.f - 1.f;
-	doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
+	//doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
 	//renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
+	renderAPI.clearRenderContext(colors::BLACK, Depth(), context);
 
 	/* Fire render */
 	for (int y = 0; y < FIRE_H; y++) {
@@ -153,13 +158,11 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
 	command1.vertexBuffer = quadMesh;
-	renderAPI.draw(command1, frameBufferOut);
-
-	// RenderAPI::drawTriangle(glm::vec3(0., 1.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,1.,0.), colors::RED, frameBufferOut);
-	// RenderAPI::drawTriangle(glm::vec3(0., 0.,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,0.,0.), colors::GREEN, frameBufferOut);
 
 
+	renderAPI.draw(command1, context);
 
+	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 }
 
 void Engine::destroy() {
