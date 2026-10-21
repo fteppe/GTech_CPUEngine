@@ -26,6 +26,7 @@ public:
 
 	RenderAPI renderAPI;
 	ResourceHandle<renderResource::Texture> doomHead;
+	ResourceHandle<renderResource::VertexBuffer> quadMesh;
 
 	glm::ivec2 doomHeadPos = glm::ivec2(0);
 

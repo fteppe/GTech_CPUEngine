@@ -5,6 +5,9 @@
 #include "glm/common.hpp"
 #include "glm/geometric.hpp"
 #include "glm/vec2.hpp"
+#include "RenderResources/resolvedDrawCommand.h"
+#include "RenderResources/texture.h"
+#include "RenderResources/vertexBuffer.h"
 
 static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 screenDims) {
 	glm::ivec3 screenSpace;
@@ -55,6 +58,11 @@ static glm::vec3 getBarycentricCoord(glm::vec<3, TComponent> v1, glm::vec<3, TCo
 }
 
 
+RenderAPI::RenderAPI() {
+}
+
+RenderAPI::~RenderAPI() {
+}
 
 void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
 	glm::ivec2 screenDims(WIDTH, HEIGHT);
@@ -78,9 +86,51 @@ static T interpolate(T a, T b , T c, glm::vec3 lambda) {
 
 void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuffer) {
 
-	glm::vec3 v1 = drawCommand.triToDraw.pos[0];
-	glm::vec3 v2 = drawCommand.triToDraw.pos[1];
-	glm::vec3 v3 = drawCommand.triToDraw.pos[2];
+	renderResource::ResolvedDrawCommand resolvedCommand;
+	if (drawCommand.bindedTexture.isValid())
+	{
+		resolvedCommand.texture = this->textures[drawCommand.bindedTexture].get();
+	}
+	resolvedCommand.vertexBuffer = this->vertexBuffers[drawCommand.vertexBuffer].get();
+
+	draw(resolvedCommand, frameBuffer);
+
+
+}
+
+ResourceHandle<renderResource::Texture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
+	assert(dims.x * dims.y == textureData.size());
+	auto texturePtr = std::make_unique<renderResource::Texture>(dims, textureData);
+	auto handle = this->createHandle<renderResource::Texture>();
+	this->textures.emplace(handle, std::move(texturePtr));
+	return handle;
+}
+
+ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const std::vector<glm::vec3>& positions,
+	const std::vector<glm::vec2>& texCoords)
+{
+	assert(positions.size() == texCoords.size());
+	auto vertexBuffer = std::make_unique<renderResource::VertexBuffer>();
+	auto handle = this->createHandle<renderResource::VertexBuffer>();
+	vertexBuffer->addAttributeToBuffer(positions);
+	vertexBuffer->addAttributeToBuffer(texCoords);
+	this->vertexBuffers.emplace(handle, std::move(vertexBuffer));
+	return handle;
+}
+
+void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, FinalFrameBuffer &frameBuffer) {
+	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
+		drawTriangle(drawCommand, iVert, frameBuffer);
+	}
+}
+
+void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
+	FinalFrameBuffer &frameBuffer) {
+
+
+	glm::vec3 v1 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex, 0);
+	glm::vec3 v2 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 1, 0);
+	glm::vec3 v3 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 2, 0);
 
 	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
 	glm::vec3 maxBox = glm::max(glm::max(v1, v2), v3);
@@ -96,12 +146,6 @@ void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuff
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
 
-	renderResource::Texture* texture = nullptr;
-	if (drawCommand.bindedTexture.isValid())
-	{
-		texture = this->textures[drawCommand.bindedTexture].get();
-	}
-
 	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
 		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
 			glm::ivec3 point(i,j,0);
@@ -110,10 +154,14 @@ void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuff
 			if (pointInTriangle(point, iv1, iv2, iv3))
 			{
 				glm::vec3 baryCentricCoord = getBarycentricCoord(v1, v2, v3, floatingPoint);
-				glm::vec2 interpolatedUV = interpolate(drawCommand.triToDraw.uv[0],drawCommand.triToDraw.uv[1],drawCommand.triToDraw.uv[2], baryCentricCoord);
+				glm::vec2 uv1 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex, 1);
+				glm::vec2 uv2 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex + 1, 1);
+				glm::vec2 uv3 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex + 2, 1);
+
+				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, baryCentricCoord);
 				Color pixelColor = colors::PINK;
-				if (texture) {
-					pixelColor = texture->sample(glm::vec3(interpolatedUV, 0.));
+				if (command.texture) {
+					pixelColor = command.texture->sample(glm::vec3(interpolatedUV, 0.));
 				}
 				frameBuffer.put_pixel(i,HEIGHT - j,pixelColor);
 				//frameBuffer.put_pixel(i,HEIGHT - j,Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.));
@@ -124,10 +172,16 @@ void RenderAPI::draw(const DrawCommand &drawCommand, FinalFrameBuffer &frameBuff
 	}
 }
 
-ResourceHandle<renderResource::Texture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
-	assert(dims.x * dims.y == textureData.size());
-	auto texturePtr = std::make_unique<renderResource::Texture>(dims, textureData);
-	auto handle = this->createHandle<renderResource::Texture>();
-	this->textures.emplace(handle, std::move(texturePtr));
-	return handle;
+template<typename TVertex>
+void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle,
+	const std::vector<TVertex> &vertexData, size_t attributeIndex)
+{
+	auto& vertexBuffer = this->vertexBuffers[handle];
+	vertexBuffer->updateAttribute(vertexData, attributeIndex);
 }
+
+template
+void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle,const std::vector<glm::vec3> &vertexData, size_t attributeIndex);
+
+template
+void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle,const std::vector<glm::vec2> &vertexData, size_t attributeIndex);

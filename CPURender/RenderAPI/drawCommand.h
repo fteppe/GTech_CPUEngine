@@ -9,7 +9,7 @@ struct Triangle {
 
 
 struct DrawCommand {
-	Triangle triToDraw;
+	ResourceHandle<renderResource::VertexBuffer> vertexBuffer;
 	ResourceHandle<renderResource::Texture> bindedTexture;
 };
 
