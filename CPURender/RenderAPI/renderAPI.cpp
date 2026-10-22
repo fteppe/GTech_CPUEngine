@@ -146,10 +146,11 @@ ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const
                                                                            const std::vector<glm::vec2>& texCoords)
 {
 	assert(positions.size() == texCoords.size());
-	auto vertexBuffer = std::make_unique<renderResource::VertexBuffer>();
+	std::vector<renderResource::VertexAttribute> vertexAttributes = {renderResource::VertexAttribute::Vec3, renderResource::VertexAttribute::Vec2};
+	auto vertexBuffer = std::make_unique<renderResource::VertexBuffer>(positions.size(), vertexAttributes);
 	auto handle = this->createHandle<renderResource::VertexBuffer>();
-	vertexBuffer->addAttributeToBuffer(positions);
-	vertexBuffer->addAttributeToBuffer(texCoords);
+	vertexBuffer->updateAttribute(positions, 0);
+	vertexBuffer->updateAttribute(texCoords, 1);
 	this->vertexBuffers.emplace(handle, std::move(vertexBuffer));
 	return handle;
 }
@@ -174,10 +175,18 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
 	renderResource::ResolvedDrawContext &drawContext) {
 
+	ConstVertexIterator VerticesBegin = command.vertexBuffer->begin();
+	ConstVertexReference vertex1 = VerticesBegin + startIndex;
+	ConstVertexReference vertex2 = VerticesBegin + startIndex + 1;
+	ConstVertexReference vertex3 = VerticesBegin + startIndex + 2;
 
-	glm::vec3 v1 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex, 0);
-	glm::vec3 v2 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 1, 0);
-	glm::vec3 v3 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 2, 0);
+	auto [v1, uv1] = vertex1.getVertexAttributes<glm::vec3, glm::vec2>();
+	auto [v2, uv2] = vertex2.getVertexAttributes<glm::vec3, glm::vec2>();
+	auto [v3, uv3] = vertex3.getVertexAttributes<glm::vec3, glm::vec2>();
+
+	// glm::vec3 v1 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex, 0);
+	// glm::vec3 v2 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 1, 0);
+	// glm::vec3 v3 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 2, 0);
 
 
 	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
@@ -226,9 +235,6 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 					baryCentricCoord.y * invDepths.y * gammaInv,
 					baryCentricCoord.z * invDepths.z * gammaInv
 				};
-				glm::vec2 uv1 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex, 1);
-				glm::vec2 uv2 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex + 1, 1);
-				glm::vec2 uv3 = command.vertexBuffer->getVertexAttribute<glm::vec2>(startIndex + 2, 1);
 
 				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, depthCorrectedCoord);
 				Color pixelColor = colors::PINK;

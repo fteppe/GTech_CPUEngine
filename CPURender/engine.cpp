@@ -6,6 +6,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <vector>
+#include <chrono>
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -120,8 +121,8 @@ void Engine::handleEvent(const SDL_Event &event) {
 }
 
 void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
-	frameBufferOut.clear(0x000000);
 
+	auto start = std::chrono::high_resolution_clock::now();
 	/* Fire update */
 	for (uint32_t x = 0; x < FIRE_W; x++) {
 		for (uint32_t y = 1; y < FIRE_H; y++) {
@@ -156,16 +157,19 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
-
-	renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
+	// glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
+	//
+	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
 	command1.vertexBuffer = quadMesh;
-
 	renderAPI.draw(command1, context);
-
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
+
+
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = duration_cast<std::chrono::milliseconds>(end - start);
+	printf("frametime is %d ms\n", duration.count());
 }
 
 void Engine::destroy() {
