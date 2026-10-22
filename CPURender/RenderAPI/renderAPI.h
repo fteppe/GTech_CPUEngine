@@ -54,6 +54,9 @@ protected:
 	std::unordered_map<ColorTextureHandle, std::unique_ptr<renderResource::ColorTexture>> textures;
 	std::unordered_map<VertexBufferHandle, std::unique_ptr<renderResource::VertexBuffer>> vertexBuffers;
 	std::unordered_map<TextureHandle, std::unique_ptr<renderResource::Texture>> frameBuffers;
+
+	//This one is used for the output of vertex Shader execution
+	std::unique_ptr<renderResource::VertexBuffer> recycledVertexBuffer;
 };
 
 

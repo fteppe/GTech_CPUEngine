@@ -13,6 +13,7 @@ namespace renderResource {
 		Float,
 		Vec3,
 		Vec2,
+		Vec4,
 	};
 
 	class VertexBuffer {
@@ -28,6 +29,8 @@ namespace renderResource {
 		};
 
 		size_t getVertexCount() const {return vertexCount;}
+		const std::vector<VertexAttribute>& getAttributes() const {return attributes;}
+
 		template<typename TVertexData>
 		void updateAttribute(const std::vector<TVertexData>& dataIn, size_t attributeIndex) {
 			assert(getCorrespondingVertexAttribute<TVertexData>() == attributes[attributeIndex]);
@@ -52,6 +55,18 @@ namespace renderResource {
 			return VertexIterator(&this->data[0], this->fullVertexSize);
 		}
 
+		void recycleVertexBuffer(size_t vertexCountIn, const std::vector<VertexAttribute>& attributesIn) {
+			vertexCount = vertexCountIn;
+			attributes = attributesIn;
+			fullVertexSize = 0;
+			attributesStartCache.clear();
+			for (auto attribute : attributes) {
+				attributesStartCache.push_back(fullVertexSize);
+				fullVertexSize += getSizeOfAttribute(attribute);
+			}
+			data.resize(fullVertexSize * vertexCount);
+		}
+
 	protected:
 		size_t getSizeOfAttribute(VertexAttribute attribute) const {
 			switch (attribute) {
@@ -61,6 +76,8 @@ namespace renderResource {
 					return sizeof(glm::vec3);
 				case VertexAttribute::Vec2:
 					return sizeof(glm::vec2);
+				case VertexAttribute::Vec4:
+					return sizeof(glm::vec4);
 			}
 		}
 
@@ -70,7 +87,8 @@ namespace renderResource {
 		size_t fullVertexSize = 0;
 		std::vector<size_t> attributesStartCache;
 	};
-
+	template<>
+	VertexAttribute VertexBuffer::getCorrespondingVertexAttribute<glm::vec4>() {return VertexAttribute::Vec4;}
 	template<>
 	VertexAttribute VertexBuffer::getCorrespondingVertexAttribute<glm::vec3>() {return VertexAttribute::Vec3;}
 	template<>

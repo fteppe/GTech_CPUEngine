@@ -62,6 +62,7 @@ static glm::vec3 getBarycentricCoord(glm::vec<2, TComponent> v1, glm::vec<2, TCo
 
 
 RenderAPI::RenderAPI() {
+	recycledVertexBuffer = std::make_unique<renderResource::VertexBuffer>(0, std::vector<renderResource::VertexAttribute>());
 }
 
 RenderAPI::~RenderAPI() {
@@ -167,6 +168,29 @@ void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrame
 }
 
 void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, renderResource::ResolvedDrawContext &drawContext) {
+
+	std::vector<renderResource::VertexAttribute> attributesOut = {renderResource::VertexAttribute::Vec4, renderResource::VertexAttribute::Vec2};
+	recycledVertexBuffer->recycleVertexBuffer(drawCommand.vertexBuffer->getVertexCount(), attributesOut);
+
+	ConstVertexIterator verticesInBegin = drawCommand.vertexBuffer->begin();
+	VertexIterator verticesOutBegin = recycledVertexBuffer->begin();
+	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
+	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 5.f);
+	glm::mat4 object(1.);
+	object = rotate(object, rotation * 0.01f, {0.,1.,0.});
+
+	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); ++iVert) {
+		ConstVertexReference vertex1 = verticesInBegin + iVert;
+
+		auto [v1, uv1] = vertex1.getVertexAttributes<glm::vec3, glm::vec2>();
+
+		glm::mat4 mvp = projection * view * object;
+		glm::vec4 v1_4 = mvp * glm::vec4(v1, 1.);
+
+		VertexReference vertexOut = verticesOutBegin + iVert;
+		vertexOut.setVertexAttributes(std::make_tuple(v1_4, uv1));
+	}
+
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
 		drawTriangle(drawCommand, iVert, drawContext);
 	}
@@ -175,32 +199,19 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
 	renderResource::ResolvedDrawContext &drawContext) {
 
-	ConstVertexIterator VerticesBegin = command.vertexBuffer->begin();
+	ConstVertexIterator VerticesBegin = recycledVertexBuffer->begin();
 	ConstVertexReference vertex1 = VerticesBegin + startIndex;
 	ConstVertexReference vertex2 = VerticesBegin + startIndex + 1;
 	ConstVertexReference vertex3 = VerticesBegin + startIndex + 2;
 
-	auto [v1, uv1] = vertex1.getVertexAttributes<glm::vec3, glm::vec2>();
-	auto [v2, uv2] = vertex2.getVertexAttributes<glm::vec3, glm::vec2>();
-	auto [v3, uv3] = vertex3.getVertexAttributes<glm::vec3, glm::vec2>();
+	auto [v1, uv1] = vertex1.getVertexAttributes<glm::vec4, glm::vec2>();
+	auto [v2, uv2] = vertex2.getVertexAttributes<glm::vec4, glm::vec2>();
+	auto [v3, uv3] = vertex3.getVertexAttributes<glm::vec4, glm::vec2>();
 
-	// glm::vec3 v1 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex, 0);
-	// glm::vec3 v2 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 1, 0);
-	// glm::vec3 v3 = command.vertexBuffer->getVertexAttribute<glm::vec3>(startIndex + 2, 0);
-
-
-	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 5.f);
-	glm::mat4 object(1.);
-	object = rotate(object, rotation * 0.01f, {0.,1.,0.});
-	glm::mat4 mvp = projection * view * object;
-	glm::vec4 v1_4 = mvp * glm::vec4(v1, 1.);
-	glm::vec4 v2_4 = mvp * glm::vec4(v2, 1.);
-	glm::vec4 v3_4 = mvp * glm::vec4(v3, 1.);
-	v1 = glm::vec3(v1_4.x, v1_4.y, v1_4.z) / v1_4.w;
-	v2 = glm::vec3(v2_4.x, v2_4.y, v2_4.z) / v2_4.w;
-	v3 = glm::vec3(v3_4.x, v3_4.y, v3_4.z) / v3_4.w;
-	glm::vec3 invDepths = {1.f/v1_4.z, 1.f/v2_4.z, 1.f/v3_4.z};
+	glm::vec3 invDepths = {1.f/v1.z, 1.f/v2.z, 1.f/v3.z};
+	v1 = v1 * (1.f/ v1.w);
+	v2 = v2 * (1.f/ v2.w);
+	v3 = v3 * (1.f/ v3.w);
 
 	glm::vec2 v1_2d = {v1.x, v1.y};
 	glm::vec2 v2_2d = {v2.x, v2.y};

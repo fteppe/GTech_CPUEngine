@@ -10,6 +10,7 @@ struct VertexIterator {
 		return VertexIterator(start + offset*vertexSize, vertexSize);
 	}
 	friend struct VertexReference;
+	friend struct ConstVertexIterator;
 
 protected:
 	uint8_t* start = nullptr;
@@ -18,6 +19,8 @@ protected:
 
 struct ConstVertexIterator {
 	ConstVertexIterator(const uint8_t* start, size_t vertexSize) : start(start), vertexSize(vertexSize) {}
+	ConstVertexIterator(VertexIterator it) : start(it.start), vertexSize(it.vertexSize) {}
+
 	ConstVertexIterator operator+(size_t offset) const {
 		return ConstVertexIterator(start+offset*vertexSize, vertexSize);
 	}
@@ -62,8 +65,8 @@ struct VertexReference {
 	VertexReference(VertexIterator it) : start(it.start), vertexSize(it.vertexSize) {}
 
 	template<typename TVertexAttrib>
-	static const uint8_t* copyToOrigin(uint8_t* origin, const TVertexAttrib& dest) {
-		dest = *reinterpret_cast<const TVertexAttrib*>(origin);
+	static uint8_t* copyToOrigin(uint8_t* origin, const TVertexAttrib& dest) {
+		*reinterpret_cast<TVertexAttrib*>(origin) = dest;
 		return origin + sizeof(TVertexAttrib);
 	}
 
