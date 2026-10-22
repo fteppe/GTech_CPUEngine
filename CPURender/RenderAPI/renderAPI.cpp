@@ -20,28 +20,32 @@ static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 screenDims) {
 	return screenSpace;
 }
 
-static glm::vec3 fromScreenToClip(glm::ivec3 screenSpace, glm::ivec2 screenDims) {
-	return glm::vec3(((float(screenSpace.x) / screenDims.x)-0.5) * 2.0,  ((float(screenSpace.y) / screenDims.y)-0.5) * 2.0, screenSpace.z);
+static glm::vec2 fromScreenToClip(glm::ivec2 screenSpace, glm::ivec2 screenDims) {
+	return glm::vec2(((float(screenSpace.x) / screenDims.x)-0.5) * 2.0,  ((float(screenSpace.y) / screenDims.y)-0.5) * 2.0);
 }
 
-int sign (glm::ivec3 p1, glm::ivec3 p2, glm::ivec3 p3)
+int sign (glm::vec2 p1, glm::vec2 p2, glm::vec2 p3)
 {
 	return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 }
 
-bool pointInTriangle (glm::ivec3 pt, glm::ivec3  v1, glm::ivec3  v2, glm::ivec3  v3)
+float det2d(glm::vec2 v1, glm::vec2 v2) {
+	return v1.x * v2.y - v2.x * v1.y;
+}
+
+bool pointInTriangle (glm::vec2 pt, glm::vec2  v1, glm::vec2  v2, glm::vec2  v3)
 {
-	int d1, d2, d3;
+	float d1, d2, d3;
 	bool has_neg, has_pos;
 
-	d1 = sign(pt, v1, v2);
-	d2 = sign(pt, v2, v3);
-	d3 = sign(pt, v3, v1);
+	d1 = det2d(v2 - v1, pt - v1);
+	d2 = det2d(v3 - v2, pt - v2);
+	d3 = det2d(v1 - v3, pt - v3);
 
 	has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
 	has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
 
-	return !(has_neg && has_pos);
+	return !has_neg;
 }
 
 template<typename TComponent>
@@ -196,6 +200,29 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	}
 }
 
+static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
+	if (v1.x < -1. && v2.x < -1. && v3.x < -1.) {
+		return true;
+	}
+	if (v1.y < -1. && v2.y < -1. && v3.y < -1.) {
+		return true;
+	}
+	if (v1.z < -1. && v2.z < -1. && v3.z < -1.) {
+		return true;
+	}
+	
+	if (v1.x > 1. && v2.x > 1. && v3.x > 1.) {
+		return true;
+	}
+	if (v1.y > 1. && v2.y > 1. && v3.y > 1.) {
+		return true;
+	}
+	if (v1.z > 1. && v2.z > 1. && v3.z > 1.) {
+		return true;
+	}
+	return false;
+}
+
 void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
 	renderResource::ResolvedDrawContext &drawContext) {
 
@@ -213,6 +240,12 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	v2 = v2 * (1.f/ v2.w);
 	v3 = v3 * (1.f/ v3.w);
 
+	if (earlyDiscardTriangle(v1, v2, v3))
+		return;
+	if (det2d(v2 - v1, v3 - v2) <= 0.) { //backface culling
+		return;
+	}
+
 	glm::vec2 v1_2d = {v1.x, v1.y};
 	glm::vec2 v2_2d = {v2.x, v2.y};
 	glm::vec2 v3_2d = {v3.x, v3.y};
@@ -225,18 +258,15 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 
 	glm::ivec2 screenDims(WIDTH, HEIGHT);
 
-	glm::ivec3 iv1 = setToScreenSpace(v1, screenDims);
-	glm::ivec3 iv2 = setToScreenSpace(v2, screenDims);
-	glm::ivec3 iv3 = setToScreenSpace(v3, screenDims);
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
 	float triangleAreaInv = 1 / areaOfTriangle(v1_2d, v2_2d, v3_2d);
 	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
 		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
 			glm::ivec3 point(i,j,0);
-			glm::vec2 floatingPoint = fromScreenToClip(glm::vec3(i,j,0), screenDims);
+			glm::vec2 floatingPoint = fromScreenToClip({i,j}, screenDims);
 
-			if (pointInTriangle(point, iv1, iv2, iv3))
+			if (pointInTriangle(floatingPoint, v1, v2, v3))
 			{
 				glm::vec3 baryCentricCoord = getBarycentricCoord(v1_2d, v2_2d, v3_2d, floatingPoint, triangleAreaInv);
 				float gamma = baryCentricCoord.x * invDepths.x + baryCentricCoord.y * invDepths.y + baryCentricCoord.z * invDepths.z;
