@@ -37,7 +37,7 @@ public:
 
 class PixelShader : public Shader {
 public:
-	virtual Color PS_MAIN(ConstVertexReference interpolatedVertex) const = 0;
+	virtual Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const = 0;
 };
 
 struct GlobalConstantBuffer {
@@ -59,5 +59,5 @@ class BaseVertexShader : public VertexShader {
 
 class BasePixelShader : public PixelShader {
 
-	Color PS_MAIN(ConstVertexReference interpolatedVertex) const override;
+	Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const override;
 };

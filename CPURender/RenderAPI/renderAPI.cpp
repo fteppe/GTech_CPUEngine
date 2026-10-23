@@ -281,7 +281,7 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 				drawContext.interpolatedVertexRef.setFromInterpolation(vertex1, vertex2, vertex3, depthCorrectedCoord);
 				// auto [clipPos, uv] = ConstVertexReference(drawContext.interpolatedVertexRef).getVertexAttributes<glm::vec4, glm::vec2>();
 
-				Color pixelColor = command.pixelShader->PS_MAIN(drawContext.interpolatedVertexRef);
+				Color pixelColor = command.pixelShader->PS_MAIN(point, drawContext.interpolatedVertexRef);
 				// if (command.texture) {
 				// 	pixelColor = command.texture->sample(glm::vec3(uv, 0.));
 				// }
