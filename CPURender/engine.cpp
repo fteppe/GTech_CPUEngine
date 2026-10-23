@@ -146,7 +146,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::vec2 doomHeadPosClipspace = glm::vec2(float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT) * 2.f - 1.f;
 	//doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
 	//renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
-	renderAPI.clearRenderContext(colors::WHITE, Depth(), context);
+	renderAPI.clearRenderContext(Color::fromUNorm(0.2,0.2,0.2), Depth(), context);
 
 	/* Fire render */
 	for (int y = 0; y < FIRE_H; y++) {

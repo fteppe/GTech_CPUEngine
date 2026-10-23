@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "vertexAttribute.h"
 #include "vertexIterator.h"
 #include "../../baseTypes/color.h"
 #include "glm/vec2.hpp"
@@ -9,12 +10,7 @@
 #include "glm/vec4.hpp"
 
 namespace renderResource {
-	enum class VertexAttribute {
-		Float,
-		Vec3,
-		Vec2,
-		Vec4,
-	};
+
 
 	class VertexBuffer {
 	public:
@@ -68,18 +64,7 @@ namespace renderResource {
 		}
 
 	protected:
-		size_t getSizeOfAttribute(VertexAttribute attribute) const {
-			switch (attribute) {
-				case VertexAttribute::Float:
-					return sizeof(float);
-				case VertexAttribute::Vec3:
-					return sizeof(glm::vec3);
-				case VertexAttribute::Vec2:
-					return sizeof(glm::vec2);
-				case VertexAttribute::Vec4:
-					return sizeof(glm::vec4);
-			}
-		}
+
 
 		std::vector<uint8_t> data;
 		std::vector<VertexAttribute> attributes;

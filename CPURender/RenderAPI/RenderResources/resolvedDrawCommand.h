@@ -1,4 +1,5 @@
 #pragma once
+#include "vertexIterator.h"
 
 
 namespace renderResource {
@@ -15,6 +16,9 @@ namespace renderResource {
 		DrawContextConfig config;
 		ColorTexture* color;
 		DepthBuffer* depth;
+
+		//a cache used for interpolation
+		mutable VertexReference interpolatedVertexRef;
 	};
 }
 

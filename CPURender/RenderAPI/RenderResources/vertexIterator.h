@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <tuple>
 
+#include "vertexAttribute.h"
+
 
 struct VertexIterator {
 	VertexIterator(uint8_t* start, size_t vertexSize) : start(start), vertexSize(vertexSize) {}
@@ -55,6 +57,8 @@ struct ConstVertexReference {
 		return returnTuple;
 	}
 
+	friend struct VertexReference;
+
 protected:
 	const uint8_t* start = nullptr;
 	size_t vertexSize = 0;
@@ -79,8 +83,51 @@ struct VertexReference {
 			((posInVertex = copyToOrigin(posInVertex, arg)), ...);
 		}, tupleIn);
 	}
+	friend struct InPlaceVertex;
+
+	 operator ConstVertexReference() const {
+		 ConstVertexReference ref;
+	 	ref.vertexSize = vertexSize;
+	 	ref.start = start;
+	 	return ref;
+	 }
+
+	void setFromInterpolation(ConstVertexReference v1,ConstVertexReference v2, ConstVertexReference v3, glm::vec3 lambda) {
+		assert(vertexSize == v1.vertexSize && vertexSize == v2.vertexSize && vertexSize == v3.vertexSize);
+		assert(vertexSize % sizeof(float) == 0);
+		//Because all vertex attributes are float, we can interpolate them this way
+		//doesn't matter if it is 2 floats or a glmvec2
+		for (size_t i = 0 ; i < vertexSize/sizeof(float) ; ++i) {
+			reinterpret_cast<float*>(start)[i] = reinterpret_cast<const float*>(v1.start)[i] * lambda.x +
+				reinterpret_cast<const float*>(v2.start)[i] * lambda.y +
+				reinterpret_cast<const float*>(v3.start)[i] * lambda.z;
+		}
+	}
 
 protected:
 	uint8_t* start = nullptr;
 	size_t vertexSize = 0;
+};
+
+
+//A structure to have vertices attributes, without allocating memory
+struct InPlaceVertex {
+	InPlaceVertex() = default;
+
+	InPlaceVertex(const::std::vector<renderResource::VertexAttribute>& vertexAttributes ) {
+		for (auto attribute : vertexAttributes) {
+			usedSize += getSizeOfAttribute(attribute);
+		}
+		assert(ussedSize < vertexAttributes.size());
+	}
+
+	VertexReference getVertexReference() {
+		VertexReference ref;
+		ref.vertexSize = usedSize;
+		ref.start = &data[0];
+		return ref;
+	}
+
+	std::size_t usedSize = 0;
+	std::array<uint8_t, 20> data;
 };

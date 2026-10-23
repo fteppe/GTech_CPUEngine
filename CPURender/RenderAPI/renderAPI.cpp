@@ -195,6 +195,10 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 		vertexOut.setVertexAttributes(std::make_tuple(v1_4, uv1));
 	}
 
+	InPlaceVertex InPlaceVertex(recycledVertexBuffer->getAttributes());
+	VertexReference interpolatedVertexRef = InPlaceVertex.getVertexReference();
+	drawContext.interpolatedVertexRef = interpolatedVertexRef;
+
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
 		drawTriangle(drawCommand, iVert, drawContext);
 	}
@@ -240,7 +244,7 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	v2 = v2 * (1.f/ v2.w);
 	v3 = v3 * (1.f/ v3.w);
 
-	if (earlyDiscardTriangle(v1, v2, v3))
+	if (earlyDiscardTriangle(v1, v2, v3)) //out of the clipspace
 		return;
 	if (det2d(v2 - v1, v3 - v2) <= 0.) { //backface culling
 		return;
@@ -260,6 +264,7 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
+
 	float triangleAreaInv = 1 / areaOfTriangle(v1_2d, v2_2d, v3_2d);
 	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
 		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
@@ -278,9 +283,12 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 				};
 
 				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, depthCorrectedCoord);
+				drawContext.interpolatedVertexRef.setFromInterpolation(vertex1, vertex2, vertex3, depthCorrectedCoord);
+				auto [clipPos, uv] = ConstVertexReference(drawContext.interpolatedVertexRef).getVertexAttributes<glm::vec4, glm::vec2>();
+
 				Color pixelColor = colors::PINK;
 				if (command.texture) {
-					pixelColor = command.texture->sample(glm::vec3(interpolatedUV, 0.));
+					pixelColor = command.texture->sample(glm::vec3(uv, 0.));
 				}
 				//pixelColor = Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z);
 				//pixelColor = Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.);
