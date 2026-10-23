@@ -34,7 +34,9 @@ protected:
 	ResourceHandle<renderResource::Texture> depthBuffer;
 	glm::ivec2 doomHeadPos = glm::ivec2(0);
 
-
+	ResourceHandle<VertexShader> vs;
+	ResourceHandle<PixelShader> ps;
+	ResourceHandle<ConstantBuffer> cb;
 
 	SDL_Window* window = nullptr;
 };

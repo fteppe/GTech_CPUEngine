@@ -135,10 +135,14 @@ void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
 	resolvedDrawContext.config = drawContext.config;
 	resolvedDrawContext.color = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[drawContext.color].get());
 	resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.depth].get());
-	this->resolveShaderResources(*drawCommand.vertexShader);
-	this->resolveShaderResources(*drawCommand.pixelShader);
-	resolvedCommand.vertexShader = drawCommand.vertexShader;
-	resolvedCommand.pixelShader = drawCommand.pixelShader;
+	auto vs = vertexShaders[drawCommand.vertexShader].get();
+	auto ps = pixelShaders[drawCommand.pixelShader].get();
+	this->resolveShaderResources(*vs, drawCommand.VS_Resources);
+	this->resolveShaderResources(*ps,  drawCommand.PS_resources);
+	resolvedCommand.vertexShader = vs;
+	resolvedCommand.pixelShader = ps;
+
+
 	draw(resolvedCommand, resolvedDrawContext);
 }
 
@@ -316,16 +320,25 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	}
 }
 
-void RenderAPI::resolveShaderResources(Shader &shaderIn) {
+void RenderAPI::resolveShaderResources(Shader& shaderIn, const CommandBindedResources& bindedResources) {
 
-	shaderIn.colorTextures.reserve(shaderIn.textureHandles.size());
+	shaderIn.colorTextures.reserve(bindedResources.textures.size() + 1);
 	shaderIn.colorTextures.clear();
-	for (auto handle : shaderIn.textureHandles) {
+	for (auto handle : bindedResources.textures) {
 		renderResource::ColorTexture* tex = nullptr;
 		if (handle.isValid()) {
 			tex = this->textures[handle].get();
 		}
 		shaderIn.colorTextures.push_back(tex);
+	}
+	shaderIn.constantBuffers.reserve(bindedResources.textures.size() + 1);
+	shaderIn.constantBuffers.clear();
+	for (auto handle : bindedResources.constantBuffers) {
+		ConstantBuffer* buffer = nullptr;
+		if (handle.isValid()) {
+			buffer = this->constantBuffers[handle].get();
+		}
+		shaderIn.constantBuffers.push_back(buffer);
 	}
 }
 

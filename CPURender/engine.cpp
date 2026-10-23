@@ -87,6 +87,9 @@ void Engine::init(SDL_Window* windowIn) {
 
 	frameBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Color);
 	depthBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Depth);
+	vs = renderAPI.createVertexShader<BaseVertexShader>();
+	ps = renderAPI.createPixelShader<BasePixelShader>();
+	cb = renderAPI.createConstantBuffer<GlobalConstantBuffer>();
 
 	free(data);
 	resetFire();
@@ -171,17 +174,19 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
 	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 100.f);
 	glm::mat4 object(1.);
+
 	object = rotate(object, time * 0.1f, {0.,1.,0.});
-	BaseVertexShader vertexShader;
-	vertexShader.buffer.model = object;
-	vertexShader.buffer.MVP = projection * view * object;
-	BasePixelShader pixelShader;
-	pixelShader.bindTexture(this->doomHead, 0);
+	GlobalConstantBuffer buffer;
+	buffer.MVP = projection * view * object;
+	renderAPI.updateBuffer(cb, buffer);
+
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
 	command1.vertexBuffer = quadMesh;
-	command1.vertexShader = &vertexShader;
-	command1.pixelShader = &pixelShader;
+	command1.vertexShader = vs;
+	command1.pixelShader = ps;
+	command1.PS_resources.textures.push_back(doomHead);
+	command1.VS_Resources.constantBuffers.push_back(cb);
 	renderAPI.draw(command1, context);
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 

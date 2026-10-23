@@ -27,20 +27,17 @@ using AttributesList = std::vector<renderResource::VertexAttribute>;
 class Shader {
 public:
 	template<typename TConstantBuffer>
-	const TConstantBuffer& getConstantBuffer() {
-
+	const TConstantBuffer& getConstantBuffer(size_t index) const {
+		return constantBuffers[index]->getData<TConstantBuffer>();
 	}
 	virtual ~Shader(){}
 	const renderResource::ColorTexture& getColorTexture(size_t index) const {
 		return *colorTextures[index];
 	}
 
-	void bindTexture(ColorTextureHandle, size_t index);
-
 private:
 	std::vector<renderResource::ColorTexture*>	colorTextures;
-	std::vector<ColorTextureHandle> textureHandles;
-
+	std::vector<ConstantBuffer*> constantBuffers;
 	friend class RenderAPI;
 };
 
@@ -67,12 +64,13 @@ struct GlobalConstantBuffer {
 class BaseVertexShader : public VertexShader {
 	public:
 
-	GlobalConstantBuffer buffer;
 
 	DEFINE_VS_INPUT_OUTPUT((glm::vec3, glm::vec2), (glm::vec4, glm::vec2));
 
 	void VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const  override {
 		auto [v1, uv1] = vertexIn.getVertexAttributes<VS_Inputs>();
+		GlobalConstantBuffer buffer = getConstantBuffer<GlobalConstantBuffer>(0);
+
 		glm::vec4 v1_4 = buffer.MVP * glm::vec4(v1, 1.);
 		vertexOut.setVertexAttributes(VS_Outputs(v1_4, uv1));
 	};
