@@ -28,6 +28,7 @@ struct Depth {
 	constexpr Depth() : depth(0) {}
 	constexpr Depth(uint32_t depthIn) : depth(depthIn) {}
 	constexpr float to01() const {return depthUnitValue * depth;}
+	constexpr bool operator<(const Depth& r) const {return depth < r.depth;}
 	static constexpr Depth from01(float value) {return {uint32_t(std::floor(std::numeric_limits<uint32_t>::max() * value))};}
 };
 

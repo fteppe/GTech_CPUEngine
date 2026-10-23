@@ -86,6 +86,8 @@ void Engine::init(SDL_Window* windowIn) {
 			glm::vec2(0.,0.), {1.,1.}, {1.,0}});
 
 	frameBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Color);
+	depthBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Depth);
+
 	free(data);
 	resetFire();
 }
@@ -147,10 +149,11 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 	DrawContext context;
 	context.color = frameBuffer;
+	context.depth= depthBuffer;
 	glm::vec2 doomHeadPosClipspace = glm::vec2(float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT) * 2.f - 1.f;
 	//doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
 	//renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
-	renderAPI.clearRenderContext(Color::fromUNorm(0.2,0.2,0.2), Depth(), context);
+	renderAPI.clearRenderContext(Color::fromUNorm(0.2,0.2,0.2), Depth(std::numeric_limits<uint32_t>::max()), context);
 
 	/* Fire render */
 	for (int y = 0; y < FIRE_H; y++) {

@@ -5,6 +5,7 @@
 #include "RenderAPI/resourceHandle.h"
 
 namespace renderResource {
+	class DepthBuffer;
 	class ColorTexture;
 }
 //Students can change whetever they want in this file
@@ -30,6 +31,7 @@ protected:
 	ResourceHandle<renderResource::ColorTexture> doomHead;
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
 	ResourceHandle<renderResource::Texture> frameBuffer;
+	ResourceHandle<renderResource::Texture> depthBuffer;
 	glm::ivec2 doomHeadPos = glm::ivec2(0);
 
 

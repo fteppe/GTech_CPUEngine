@@ -9,6 +9,7 @@
 #include "glm/vec2.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/matrix_projection.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "RenderResources/resolvedDrawCommand.h"
 #include "RenderResources/ColorTexture.h"
@@ -97,7 +98,7 @@ void RenderAPI::clearRenderContext(Color defaultColor, Depth defaultDepth, DrawC
 		resolvedDrawContext.color->fillT(defaultColor);
 	}
 	if (drawContext.depth.isValid()) {
-		resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.color].get());
+		resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.depth].get());
 		resolvedDrawContext.depth->fillT(defaultDepth);
 	}
 }
@@ -193,7 +194,8 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	InPlaceVertex InPlaceVertex(recycledVertexBuffer->getAttributes());
 	VertexReference interpolatedVertexRef = InPlaceVertex.getVertexReference();
 	drawContext.interpolatedVertexRef = interpolatedVertexRef;
-
+	//We should have a vec4 as output of the vertex shader !
+	assert(recycledVertexBuffer->getAttributes()[0] == renderResource::VertexAttribute::Vec4);
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
 		drawTriangle(drawCommand, iVert, drawContext);
 	}
@@ -225,14 +227,22 @@ static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
 	renderResource::ResolvedDrawContext &drawContext) {
 
-	ConstVertexIterator VerticesBegin = recycledVertexBuffer->begin();
-	ConstVertexReference vertex1 = VerticesBegin + startIndex;
-	ConstVertexReference vertex2 = VerticesBegin + startIndex + 1;
-	ConstVertexReference vertex3 = VerticesBegin + startIndex + 2;
+	// ConstVertexIterator VerticesBegin = recycledVertexBuffer->begin();
+	// ConstVertexReference vertex1 = VerticesBegin + startIndex;
+	// ConstVertexReference vertex2 = VerticesBegin + startIndex + 1;
+	// ConstVertexReference vertex3 = VerticesBegin + startIndex + 2;
 
-	auto [v1, uv1] = vertex1.getVertexAttributes<glm::vec4, glm::vec2>();
-	auto [v2, uv2] = vertex2.getVertexAttributes<glm::vec4, glm::vec2>();
-	auto [v3, uv3] = vertex3.getVertexAttributes<glm::vec4, glm::vec2>();
+
+
+	VertexIterator VerticesBegin = recycledVertexBuffer->begin();
+	VertexReference vertex1 = VerticesBegin + startIndex;
+	VertexReference vertex2 = VerticesBegin + startIndex + 1;
+	VertexReference vertex3 = VerticesBegin + startIndex + 2;
+
+	glm::vec4& v1 = vertex1.getFirst();
+	glm::vec4& v2 = vertex2.getFirst();
+	glm::vec4& v3 = vertex3.getFirst();
+
 
 	glm::vec3 invDepths = {1.f/v1.z, 1.f/v2.z, 1.f/v3.z};
 	v1 = v1 * (1.f/ v1.w);
@@ -276,19 +286,22 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 					baryCentricCoord.y * invDepths.y * gammaInv,
 					baryCentricCoord.z * invDepths.z * gammaInv
 				};
-
-				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, depthCorrectedCoord);
 				drawContext.interpolatedVertexRef.setFromInterpolation(vertex1, vertex2, vertex3, depthCorrectedCoord);
-				// auto [clipPos, uv] = ConstVertexReference(drawContext.interpolatedVertexRef).getVertexAttributes<glm::vec4, glm::vec2>();
+				float depth = drawContext.interpolatedVertexRef.getFirst().z;
 
-				Color pixelColor = command.pixelShader->PS_MAIN(point, drawContext.interpolatedVertexRef);
-				// if (command.texture) {
-				// 	pixelColor = command.texture->sample(glm::vec3(uv, 0.));
-				// }
-				//pixelColor = Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z);
-				//pixelColor = Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.);
+				if (depth > 0. && depth < 1.)
+				{
+					Depth currentDepth = drawContext.depth->getData({i , j, 0});
+					Depth newPixelDepth = Depth::from01(depth);
+					if (newPixelDepth < currentDepth)
+					{
+						Color pixelColor = command.pixelShader->PS_MAIN(point, drawContext.interpolatedVertexRef);
+						drawContext.color->writeData({i, j, 0}, pixelColor);
+						drawContext.depth->writeData({i, j, 0}, newPixelDepth);
+					}
+				}
 
-				drawContext.color->writeData({i, j, 0}, pixelColor);
+
 
 			}
 		}

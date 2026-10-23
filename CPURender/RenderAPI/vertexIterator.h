@@ -83,6 +83,10 @@ struct VertexReference {
 			((posInVertex = copyToOrigin(posInVertex, arg)), ...);
 		}, tupleIn);
 	}
+
+	//The first one should always be vec4 !
+	glm::vec4& getFirst() { return *reinterpret_cast<glm::vec4*>(start);}
+
 	friend struct InPlaceVertex;
 
 	 operator ConstVertexReference() const {
