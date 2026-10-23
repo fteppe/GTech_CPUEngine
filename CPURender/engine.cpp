@@ -15,6 +15,7 @@
 #include "RenderAPI/drawCommand.h"
 #include "RenderAPI/drawContext.h"
 #include "RenderAPI/renderAPI.h"
+#include "shaders/shader.h"
 
 
 /* Doom fire variables and color palette */
@@ -54,8 +55,8 @@ void resetFire() {
 }
 
 void Engine::init(SDL_Window* windowIn) {
-
 	printf("Init engine \n");
+	time = 0.f;
 	window = windowIn;
 	PixelData doomFace;
 	int nbrChannel;
@@ -122,6 +123,7 @@ void Engine::handleEvent(const SDL_Event &event) {
 
 void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
+	time += 0.16f;
 	auto start = std::chrono::high_resolution_clock::now();
 	/* Fire update */
 	for (uint32_t x = 0; x < FIRE_W; x++) {
@@ -140,6 +142,8 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 			}
 		}
 	}
+
+
 
 	DrawContext context;
 	context.color = frameBuffer;
@@ -160,9 +164,21 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	// glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
 	//
 	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
+
+	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
+	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 100.f);
+	glm::mat4 object(1.);
+	object = rotate(object, time * 0.1f, {0.,1.,0.});
+	BaseVertexShader vertexShader;
+	vertexShader.buffer.model = object;
+	vertexShader.buffer.MVP = projection * view * object;
+	BasePixelShader pixelShader;
+	pixelShader.bindTexture(this->doomHead, 0);
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
 	command1.vertexBuffer = quadMesh;
+	command1.vertexShader = &vertexShader;
+	command1.pixelShader = &pixelShader;
 	renderAPI.draw(command1, context);
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 

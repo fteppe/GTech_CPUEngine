@@ -1,5 +1,5 @@
 #pragma once
-#include "vertexIterator.h"
+#include "../vertexIterator.h"
 
 
 namespace renderResource {
@@ -10,6 +10,8 @@ namespace renderResource {
 	struct ResolvedDrawCommand {
 		const VertexBuffer* vertexBuffer;
 		const ColorTexture* texture;
+		const VertexShader* vertexShader;
+		const PixelShader* pixelShader;
 	};
 
 	struct ResolvedDrawContext {

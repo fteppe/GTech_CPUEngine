@@ -5,8 +5,9 @@
 
 #include "resourceHandle.h"
 #include "glm/vec2.hpp"
-#include "RenderResources/ColorTexture.h"
 
+struct Depth;
+class Shader;
 struct DrawContext;
 
 namespace renderResource {
@@ -14,6 +15,7 @@ namespace renderResource {
 	struct ResolvedDrawCommand;
 	class VertexBuffer;
 	class ColorTexture;
+	class Texture;
 }
 struct Color;
 class DrawCommand;
@@ -50,6 +52,7 @@ protected:
 
 	void draw(const renderResource::ResolvedDrawCommand& drawCommand, renderResource::ResolvedDrawContext& drawContext);
 	void drawTriangle(const renderResource::ResolvedDrawCommand& command, size_t startIndex, renderResource::ResolvedDrawContext& drawContext);
+	void resolveShaderResources(Shader& shaderIn);
 
 	std::unordered_map<ColorTextureHandle, std::unique_ptr<renderResource::ColorTexture>> textures;
 	std::unordered_map<VertexBufferHandle, std::unique_ptr<renderResource::VertexBuffer>> vertexBuffers;

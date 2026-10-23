@@ -7,7 +7,7 @@ namespace renderResource {
 		Vec4,
 	};
 
-	size_t getSizeOfAttribute(VertexAttribute attribute) {
+	inline size_t getSizeOfAttribute(VertexAttribute attribute) {
 		switch (attribute) {
 			case VertexAttribute::Float:
 				return sizeof(float);

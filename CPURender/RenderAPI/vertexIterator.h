@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <tuple>
 
-#include "vertexAttribute.h"
+#include "RenderResources/vertexAttribute.h"
 
 
 struct VertexIterator {
@@ -118,7 +118,7 @@ struct InPlaceVertex {
 		for (auto attribute : vertexAttributes) {
 			usedSize += getSizeOfAttribute(attribute);
 		}
-		assert(ussedSize < vertexAttributes.size());
+		assert(usedSize < data.size());
 	}
 
 	VertexReference getVertexReference() {
@@ -129,5 +129,5 @@ struct InPlaceVertex {
 	}
 
 	std::size_t usedSize = 0;
-	std::array<uint8_t, 20> data;
+	std::array<uint8_t, 128> data;
 };

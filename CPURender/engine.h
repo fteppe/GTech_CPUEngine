@@ -23,12 +23,15 @@ public:
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
 	void destroy();
+protected:
 
+	float time = 0.f;
 	RenderAPI renderAPI;
 	ResourceHandle<renderResource::ColorTexture> doomHead;
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
 	ResourceHandle<renderResource::Texture> frameBuffer;
 	glm::ivec2 doomHeadPos = glm::ivec2(0);
+
 
 
 	SDL_Window* window = nullptr;

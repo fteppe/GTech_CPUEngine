@@ -3,6 +3,7 @@
 #include "drawCommand.h"
 #include "drawContext.h"
 #include "../main.h"
+#include "../shaders/shader.h"
 #include "glm/common.hpp"
 #include "glm/geometric.hpp"
 #include "glm/vec2.hpp"
@@ -120,6 +121,10 @@ void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
 	resolvedDrawContext.config = drawContext.config;
 	resolvedDrawContext.color = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[drawContext.color].get());
 	resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.depth].get());
+	this->resolveShaderResources(*drawCommand.vertexShader);
+	this->resolveShaderResources(*drawCommand.pixelShader);
+	resolvedCommand.vertexShader = drawCommand.vertexShader;
+	resolvedCommand.pixelShader = drawCommand.pixelShader;
 	draw(resolvedCommand, resolvedDrawContext);
 }
 
@@ -178,21 +183,11 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 
 	ConstVertexIterator verticesInBegin = drawCommand.vertexBuffer->begin();
 	VertexIterator verticesOutBegin = recycledVertexBuffer->begin();
-	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 5.f);
-	glm::mat4 object(1.);
-	object = rotate(object, rotation * 0.01f, {0.,1.,0.});
 
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); ++iVert) {
 		ConstVertexReference vertex1 = verticesInBegin + iVert;
-
-		auto [v1, uv1] = vertex1.getVertexAttributes<glm::vec3, glm::vec2>();
-
-		glm::mat4 mvp = projection * view * object;
-		glm::vec4 v1_4 = mvp * glm::vec4(v1, 1.);
-
 		VertexReference vertexOut = verticesOutBegin + iVert;
-		vertexOut.setVertexAttributes(std::make_tuple(v1_4, uv1));
+		drawCommand.vertexShader->VS_MAIN(iVert, vertex1, vertexOut);
 	}
 
 	InPlaceVertex InPlaceVertex(recycledVertexBuffer->getAttributes());
@@ -284,12 +279,12 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 
 				glm::vec2 interpolatedUV = interpolate(uv1, uv2, uv3, depthCorrectedCoord);
 				drawContext.interpolatedVertexRef.setFromInterpolation(vertex1, vertex2, vertex3, depthCorrectedCoord);
-				auto [clipPos, uv] = ConstVertexReference(drawContext.interpolatedVertexRef).getVertexAttributes<glm::vec4, glm::vec2>();
+				// auto [clipPos, uv] = ConstVertexReference(drawContext.interpolatedVertexRef).getVertexAttributes<glm::vec4, glm::vec2>();
 
-				Color pixelColor = colors::PINK;
-				if (command.texture) {
-					pixelColor = command.texture->sample(glm::vec3(uv, 0.));
-				}
+				Color pixelColor = command.pixelShader->PS_MAIN(drawContext.interpolatedVertexRef);
+				// if (command.texture) {
+				// 	pixelColor = command.texture->sample(glm::vec3(uv, 0.));
+				// }
 				//pixelColor = Color::fromUNorm(baryCentricCoord.x, baryCentricCoord.y, baryCentricCoord.z);
 				//pixelColor = Color::fromUNorm(interpolatedUV.x, interpolatedUV.y, 0.);
 
@@ -297,6 +292,19 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 
 			}
 		}
+	}
+}
+
+void RenderAPI::resolveShaderResources(Shader &shaderIn) {
+
+	shaderIn.colorTextures.reserve(shaderIn.textureHandles.size());
+	shaderIn.colorTextures.clear();
+	for (auto handle : shaderIn.textureHandles) {
+		renderResource::ColorTexture* tex = nullptr;
+		if (handle.isValid()) {
+			tex = this->textures[handle].get();
+		}
+		shaderIn.colorTextures.push_back(tex);
 	}
 }
 

@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "vertexAttribute.h"
-#include "vertexIterator.h"
+#include "../vertexIterator.h"
 #include "../../baseTypes/color.h"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
