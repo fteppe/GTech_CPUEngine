@@ -44,9 +44,9 @@ struct ConstVertexReference {
 		return origin + sizeof(TVertexAttrib);
 	}
 
-	template<typename ...Args>
-	std::tuple<Args...> getVertexAttributes() const {
-		using TReturn = std::tuple<Args...>;
+	template<typename TTuple>
+	TTuple getVertexAttributes() const {
+		using TReturn = TTuple;
 		assert(sizeof(TReturn) == vertexSize);
 
 		TReturn returnTuple;

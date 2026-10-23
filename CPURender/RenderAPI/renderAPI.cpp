@@ -50,6 +50,19 @@ bool pointInTriangle (glm::vec2 pt, glm::vec2  v1, glm::vec2  v2, glm::vec2  v3)
 	return !has_neg;
 }
 
+static bool attributeListsEqual(const std::vector<renderResource::VertexAttribute>& v1, const std::vector<renderResource::VertexAttribute>& v2) {
+	if (v1.size() == v2.size()) {
+		for (int i = 0 ; i < v1.size(); i++) {
+			if (v1[i] != v2[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	else
+		return false;
+}
+
 template<typename TComponent>
 static float areaOfTriangle(glm::vec<2, TComponent> v1, glm::vec<2, TComponent> v2, glm::vec<2, TComponent> v3) {
 	glm::vec<3,TComponent> A(v2-v1, 0.);
@@ -179,9 +192,12 @@ void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrame
 
 void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, renderResource::ResolvedDrawContext &drawContext) {
 
-	std::vector<renderResource::VertexAttribute> attributesOut = {renderResource::VertexAttribute::Vec4, renderResource::VertexAttribute::Vec2};
-	recycledVertexBuffer->recycleVertexBuffer(drawCommand.vertexBuffer->getVertexCount(), attributesOut);
-
+	auto vsInOut = drawCommand.vertexShader->getInputOutputs();
+	auto [vsIn, vsOut] = vsInOut;
+	auto psIn = drawCommand.pixelShader->getInputs();
+	assert(attributeListsEqual(vsIn, drawCommand.vertexBuffer->getAttributes()));
+	assert(attributeListsEqual(vsOut, psIn));
+	recycledVertexBuffer->recycleVertexBuffer(drawCommand.vertexBuffer->getVertexCount(), vsOut);
 	ConstVertexIterator verticesInBegin = drawCommand.vertexBuffer->begin();
 	VertexIterator verticesOutBegin = recycledVertexBuffer->begin();
 
@@ -191,11 +207,11 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 		drawCommand.vertexShader->VS_MAIN(iVert, vertex1, vertexOut);
 	}
 
-	InPlaceVertex InPlaceVertex(recycledVertexBuffer->getAttributes());
+	InPlaceVertex InPlaceVertex(vsOut);
 	VertexReference interpolatedVertexRef = InPlaceVertex.getVertexReference();
 	drawContext.interpolatedVertexRef = interpolatedVertexRef;
 	//We should have a vec4 as output of the vertex shader !
-	assert(recycledVertexBuffer->getAttributes()[0] == renderResource::VertexAttribute::Vec4);
+	assert(vsOut[0] == renderResource::VertexAttribute::Vec4);
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
 		drawTriangle(drawCommand, iVert, drawContext);
 	}
@@ -227,13 +243,6 @@ static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
 	renderResource::ResolvedDrawContext &drawContext) {
 
-	// ConstVertexIterator VerticesBegin = recycledVertexBuffer->begin();
-	// ConstVertexReference vertex1 = VerticesBegin + startIndex;
-	// ConstVertexReference vertex2 = VerticesBegin + startIndex + 1;
-	// ConstVertexReference vertex3 = VerticesBegin + startIndex + 2;
-
-
-
 	VertexIterator VerticesBegin = recycledVertexBuffer->begin();
 	VertexReference vertex1 = VerticesBegin + startIndex;
 	VertexReference vertex2 = VerticesBegin + startIndex + 1;
@@ -242,7 +251,6 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	glm::vec4& v1 = vertex1.getFirst();
 	glm::vec4& v2 = vertex2.getFirst();
 	glm::vec4& v3 = vertex3.getFirst();
-
 
 	glm::vec3 invDepths = {1.f/v1.z, 1.f/v2.z, 1.f/v3.z};
 	v1 = v1 * (1.f/ v1.w);

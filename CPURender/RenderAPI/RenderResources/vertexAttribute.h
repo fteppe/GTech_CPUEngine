@@ -18,5 +18,29 @@ namespace renderResource {
 			case VertexAttribute::Vec4:
 				return sizeof(glm::vec4);
 		}
+		return 0;
+	}
+	template<typename TVertexData>
+	static VertexAttribute getCorrespondingVertexAttribute() {static_assert(0 && "This attribute cannot be used in a vertex buffer");return VertexAttribute::Float; }
+	template<>
+	VertexAttribute getCorrespondingVertexAttribute<glm::vec4>() {return VertexAttribute::Vec4;}
+	template<>
+	VertexAttribute getCorrespondingVertexAttribute<glm::vec3>() {return VertexAttribute::Vec3;}
+	template<>
+	VertexAttribute getCorrespondingVertexAttribute<glm::vec2>() {return VertexAttribute::Vec2;}
+	template<>
+	VertexAttribute getCorrespondingVertexAttribute<float>() {return VertexAttribute::Float;}
+
+	template<typename T>
+	VertexAttribute getCorrespondingVertexAttribute(const T& arg) { return getCorrespondingVertexAttribute<T>(); }
+
+	template<typename AttributesTuple>
+	std::vector<VertexAttribute> createAttributesVector() {
+		std::vector<VertexAttribute> out;
+		AttributesTuple tuple;
+		std::apply([&out](auto&... arg) {
+		((out.push_back(getCorrespondingVertexAttribute(arg))), ...);
+		}, tuple);
+		return out;
 	}
 }

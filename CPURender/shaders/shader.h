@@ -9,6 +9,21 @@ namespace renderResource {
 	class ColorTexture;
 }
 
+using AttributesList = std::vector<renderResource::VertexAttribute>;
+
+#define UNWRAP(Args...) Args
+
+#define DEFINE_VS_INPUT_OUTPUT(Inputs, Outputs) using VS_Inputs = std::tuple<UNWRAP Inputs>;\
+	using VS_Outputs = std::tuple<UNWRAP Outputs>;\
+	AttributesList VS_inputAttributes = renderResource::createAttributesVector<VS_Inputs>();\
+	AttributesList VS_outputAttributes = renderResource::createAttributesVector<VS_Outputs>();\
+	virtual std::pair<const AttributesList&, const AttributesList&> getInputOutputs() const override {return {VS_inputAttributes, VS_outputAttributes}; }
+
+
+#define DEFINE_PS_INPUT(Args ...) using PS_Inputs = std::tuple<Args>;\
+	AttributesList PS_inputAttributes = renderResource::createAttributesVector<PS_Inputs>();\
+	virtual const AttributesList& getInputs() const override {return PS_inputAttributes;};
+
 class Shader {
 public:
 	template<typename TConstantBuffer>
@@ -33,10 +48,14 @@ private:
 class VertexShader : public Shader {
 public:
 	virtual void VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const = 0;
+
+	virtual std::pair<const AttributesList&, const AttributesList&> getInputOutputs() const = 0;
 };
 
 class PixelShader : public Shader {
 public:
+
+	virtual const AttributesList& getInputs() const = 0;
 	virtual Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const = 0;
 };
 
@@ -50,14 +69,17 @@ class BaseVertexShader : public VertexShader {
 
 	GlobalConstantBuffer buffer;
 
+	DEFINE_VS_INPUT_OUTPUT((glm::vec3, glm::vec2), (glm::vec4, glm::vec2));
+
 	void VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const  override {
-		auto [v1, uv1] = vertexIn.getVertexAttributes<glm::vec3, glm::vec2>();
+		auto [v1, uv1] = vertexIn.getVertexAttributes<VS_Inputs>();
 		glm::vec4 v1_4 = buffer.MVP * glm::vec4(v1, 1.);
-		vertexOut.setVertexAttributes(std::make_tuple(v1_4, uv1));
+		vertexOut.setVertexAttributes(VS_Outputs(v1_4, uv1));
 	};
 };
 
 class BasePixelShader : public PixelShader {
 
+	DEFINE_PS_INPUT(glm::vec4, glm::vec2);
 	Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const override;
 };

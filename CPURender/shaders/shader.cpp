@@ -9,6 +9,6 @@ void Shader::bindTexture(ColorTextureHandle textureHandle, size_t index) {
 }
 
 Color BasePixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const {
-	auto [clipPos, uv] = interpolatedVertex.getVertexAttributes<glm::vec4, glm::vec2>();
+	auto [clipPos, uv] = interpolatedVertex.getVertexAttributes<PS_Inputs>();
 	return getColorTexture(0).sample(glm::vec3(uv, 1));
 }

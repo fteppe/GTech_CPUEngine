@@ -40,8 +40,6 @@ namespace renderResource {
 			}
 		}
 
-		template<typename TVertexData>
-		static VertexAttribute getCorrespondingVertexAttribute() {static_assert(0 && "This attribute cannot be used in a vertex buffer");return VertexAttribute::Float; }
 
 		ConstVertexIterator begin() const {
 			return ConstVertexIterator(&this->data[0], this->fullVertexSize);
@@ -72,12 +70,5 @@ namespace renderResource {
 		size_t fullVertexSize = 0;
 		std::vector<size_t> attributesStartCache;
 	};
-	template<>
-	VertexAttribute VertexBuffer::getCorrespondingVertexAttribute<glm::vec4>() {return VertexAttribute::Vec4;}
-	template<>
-	VertexAttribute VertexBuffer::getCorrespondingVertexAttribute<glm::vec3>() {return VertexAttribute::Vec3;}
-	template<>
-	VertexAttribute VertexBuffer::getCorrespondingVertexAttribute<glm::vec2>() {return VertexAttribute::Vec2;}
-	template<>
-	VertexAttribute VertexBuffer::getCorrespondingVertexAttribute<float>() {return VertexAttribute::Float;}
+
 }
