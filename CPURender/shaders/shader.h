@@ -11,7 +11,7 @@ namespace renderResource {
 
 using AttributesList = std::vector<renderResource::VertexAttribute>;
 
-#define UNWRAP(Args...) Args
+#define UNWRAP(...) __VA_ARGS__ 
 
 #define DEFINE_VS_INPUT_OUTPUT(Inputs, Outputs) using VS_Inputs = std::tuple<UNWRAP Inputs>;\
 	using VS_Outputs = std::tuple<UNWRAP Outputs>;\
@@ -20,7 +20,7 @@ using AttributesList = std::vector<renderResource::VertexAttribute>;
 	virtual std::pair<const AttributesList&, const AttributesList&> getInputOutputs() const override {return {VS_inputAttributes, VS_outputAttributes}; }
 
 
-#define DEFINE_PS_INPUT(Args ...) using PS_Inputs = std::tuple<Args>;\
+#define DEFINE_PS_INPUT(...) using PS_Inputs = std::tuple<__VA_ARGS__>;\
 	AttributesList PS_inputAttributes = renderResource::createAttributesVector<PS_Inputs>();\
 	virtual const AttributesList& getInputs() const override {return PS_inputAttributes;};
 

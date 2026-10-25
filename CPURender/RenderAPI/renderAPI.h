@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <span>
+#include <unordered_map>
 #include <glm/vec3.hpp>
 #include "RenderResources/constantBuffer.h"
 #include "resourceHandle.h"
@@ -22,7 +23,7 @@ namespace renderResource {
 	class Texture;
 }
 struct Color;
-class DrawCommand;
+struct DrawCommand;
 struct FinalFrameBuffer;
 
 using ColorTextureHandle = ResourceHandle<renderResource::ColorTexture>;

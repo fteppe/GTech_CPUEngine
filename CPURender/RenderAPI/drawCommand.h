@@ -1,5 +1,6 @@
 #pragma once
 #include "resourceHandle.h"
+#include <array>
 #include "../engine.h"
 
 class ConstantBuffer;

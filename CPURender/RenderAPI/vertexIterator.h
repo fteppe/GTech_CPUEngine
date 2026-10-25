@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <tuple>
+#include <array>
 
 #include "RenderResources/vertexAttribute.h"
 

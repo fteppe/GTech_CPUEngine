@@ -5,6 +5,7 @@ namespace renderResource {
 		Vec3,
 		Vec2,
 		Vec4,
+		Undefined,
 	};
 
 	inline size_t getSizeOfAttribute(VertexAttribute attribute) {
@@ -21,7 +22,7 @@ namespace renderResource {
 		return 0;
 	}
 	template<typename TVertexData>
-	static VertexAttribute getCorrespondingVertexAttribute() {static_assert(0 && "This attribute cannot be used in a vertex buffer");return VertexAttribute::Float; }
+	static VertexAttribute getCorrespondingVertexAttribute() {assert(0); return VertexAttribute::Undefined; }
 	template<>
 	VertexAttribute getCorrespondingVertexAttribute<glm::vec4>() {return VertexAttribute::Vec4;}
 	template<>
