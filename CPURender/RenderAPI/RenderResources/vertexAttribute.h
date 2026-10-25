@@ -1,4 +1,8 @@
 #pragma once
+
+template<class> 
+inline constexpr bool dependent_false_v = false;
+
 namespace renderResource {
 	enum class VertexAttribute {
 		Float,
@@ -22,7 +26,7 @@ namespace renderResource {
 		return 0;
 	}
 	template<typename TVertexData>
-	static VertexAttribute getCorrespondingVertexAttribute() {assert(0); return VertexAttribute::Undefined; }
+	static VertexAttribute getCorrespondingVertexAttribute() {static_assert(dependent_false_v<TVertexData>, "the default implementation should not be called"); return VertexAttribute::Undefined; }
 	template<>
 	VertexAttribute getCorrespondingVertexAttribute<glm::vec4>() {return VertexAttribute::Vec4;}
 	template<>
