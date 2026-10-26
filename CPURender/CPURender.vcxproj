@@ -146,9 +146,11 @@
     <ClCompile Include="RenderAPI\drawCommand.cpp" />
     <ClCompile Include="RenderAPI\drawContext.cpp" />
     <ClCompile Include="RenderAPI\renderAPI.cpp" />
-    <ClCompile Include="RenderAPI\RenderResources\ColorTexture.cpp" />
     <ClCompile Include="RenderAPI\RenderResources\constantBuffer.cpp" />
+    <ClCompile Include="renderAPI\renderResources\texture.cpp" />
     <ClCompile Include="shaders\shader.cpp" />
+    <ClCompile Include="shaders\terrainShader.cpp" />
+    <ClCompile Include="terrainGeneration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="baseTypes\color.h" />
@@ -157,15 +159,17 @@
     <ClInclude Include="RenderAPI\drawCommand.h" />
     <ClInclude Include="RenderAPI\drawContext.h" />
     <ClInclude Include="RenderAPI\renderAPI.h" />
-    <ClInclude Include="RenderAPI\RenderResources\ColorTexture.h" />
     <ClInclude Include="RenderAPI\RenderResources\constantBuffer.h" />
     <ClInclude Include="RenderAPI\RenderResources\resolvedDrawCommand.h" />
+    <ClInclude Include="renderAPI\renderResources\texture.h" />
     <ClInclude Include="RenderAPI\RenderResources\vertexAttribute.h" />
     <ClInclude Include="RenderAPI\RenderResources\vertexBuffer.h" />
     <ClInclude Include="RenderAPI\resourceHandle.h" />
     <ClInclude Include="RenderAPI\vertexIterator.h" />
     <ClInclude Include="shaders\shader.h" />
+    <ClInclude Include="shaders\terrainShader.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="terrainGeneration.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

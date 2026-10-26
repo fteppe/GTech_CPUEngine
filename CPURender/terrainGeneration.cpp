@@ -53,7 +53,7 @@ class TerrainGenerator {
 
 	float getAngleOnAxisForPoint(float angleBefore, float angleAfter, int posInEdge) {
 		float angleDelta = abs(angleAfter - angleBefore);
-		if (angleDelta > M_PIf /4.f) {
+		if (angleDelta > 3.14f /4.f) {
 			return posInEdge ? angleAfter : angleBefore;
 		}
 		return (angleBefore + angleAfter) / 2.f;

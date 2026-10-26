@@ -83,11 +83,20 @@ void Engine::init(SDL_Window* windowIn) {
 	doomHead = renderAPI.createTexture(glm::ivec2(doomFace.width, doomFace.height), doomFace.imageData);
 	quadMesh = renderAPI.createVertexBuffer(
 //positions
-{glm::vec3(-0.5, -0.5,0.1), glm::vec3(-0.5, 0.5, 0.1), glm::vec3(0.5,0.5,0.1),
-	glm::vec3(-0.5, -0.5,0.1), glm::vec3(0.5, 0.5, 0.1), glm::vec3(0.5,-0.5,0.1)},
+{glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.),
+	glm::vec3(-0.5, -0.5,0.), glm::vec3(0.5, 0.5, 0.), glm::vec3(0.5,-0.5,0.),
+		
+		glm::vec3(-0.5, 0.5, 0.), glm::vec3(-0.5, -0.5,0.), glm::vec3(0.5,0.5,0.),
+		glm::vec3(0.5, 0.5, 0.), glm::vec3(-0.5, -0.5,0.), glm::vec3(0.5,-0.5,0.)
+		},
+
 			//UVs
 {glm::vec2(0.,0.), {0.,1.}, {1.,1},
-			glm::vec2(0.,0.), {1.,1.}, {1.,0}});
+			glm::vec2(0.,0.), {1.,1.}, {1.,0},
+		
+		{0.,1.}, glm::vec2(0.,0.), {1.,1},
+		{1.,1.}, glm::vec2(0.,0.), {1.,0}
+		});
 
 	frameBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Color);
 	depthBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Depth);
@@ -121,7 +130,14 @@ void Engine::handleEvent(const SDL_Event &event) {
 			//We reset the fire on space bar down
 			resetFire();
 		}
+
+		float moveSpeed = 0.2f;
+
+		glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir);
+
+
 		switch (event.key.key) {
+<<<<<<< HEAD
 			case SDLK_Z:
 				mainViewpoint.worldPos += forward;
 				break;
@@ -153,6 +169,7 @@ void Engine::handleEvent(const SDL_Event &event) {
 		glm::mat4 rotation = glm::rotate(glm::mat4(1.), -xMotion, up);
 		rotation = glm::rotate(rotation, -yMotion, leftDir);
 		mainViewpoint.eyeDir = rotation * glm::vec4(mainViewpoint.eyeDir, 1.);
+
 
 	}
 }
@@ -215,9 +232,11 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	// command1.vertexShader = terrainData.vs;
 	// command1.pixelShader = terrainData.ps;
 
+
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);
 	renderAPI.draw(command1, context);
+
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 
 
