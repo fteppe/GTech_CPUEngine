@@ -1,8 +1,8 @@
 #pragma once
 #include "glm/ext/matrix_float4x4.hpp"
 
-#include "../RenderAPI/vertexIterator.h"
-#include "../RenderAPI/renderAPI.h"
+#include "../renderAPI/vertexIterator.h"
+#include "../renderAPI/renderAPI.h"
 #include "../baseTypes/color.h"
 
 namespace renderResource {

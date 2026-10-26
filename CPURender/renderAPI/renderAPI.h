@@ -3,7 +3,7 @@
 #include <span>
 #include <unordered_map>
 #include <glm/vec3.hpp>
-#include "RenderResources/constantBuffer.h"
+#include "renderResources/constantBuffer.h"
 #include "resourceHandle.h"
 #include "glm/vec2.hpp"
 

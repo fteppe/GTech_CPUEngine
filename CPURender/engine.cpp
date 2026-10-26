@@ -12,9 +12,9 @@
 #include <glm/ext/matrix_clip_space.hpp>
 
 #include "baseTypes/color.h"
-#include "RenderAPI/drawCommand.h"
-#include "RenderAPI/drawContext.h"
-#include "RenderAPI/renderAPI.h"
+#include "renderAPI/drawCommand.h"
+#include "renderAPI/drawContext.h"
+#include "renderAPI/renderAPI.h"
 #include "shaders/shader.h"
 
 

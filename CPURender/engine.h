@@ -1,8 +1,8 @@
 #pragma once
 
 #include "main.h"
-#include "RenderAPI/renderAPI.h"
-#include "RenderAPI/resourceHandle.h"
+#include "renderAPI/renderAPI.h"
+#include "renderAPI/resourceHandle.h"
 
 namespace renderResource {
 	class DepthBuffer;

@@ -11,9 +11,9 @@
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_projection.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include "RenderResources/resolvedDrawCommand.h"
-#include "RenderResources/ColorTexture.h"
-#include "RenderResources/vertexBuffer.h"
+#include "renderResources/resolvedDrawCommand.h"
+#include "renderResources/texture.h"
+#include "renderResources/vertexBuffer.h"
 
 static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 screenDims) {
 	glm::ivec3 screenSpace;

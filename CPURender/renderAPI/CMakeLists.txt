@@ -1,2 +1,2 @@
-add_subdirectory(RenderResources)
+add_subdirectory(renderResources)
 target_sources(CPURender PRIVATE renderAPI.cpp)

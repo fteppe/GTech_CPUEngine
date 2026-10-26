@@ -4,7 +4,7 @@
 #include <tuple>
 #include <array>
 
-#include "RenderResources/vertexAttribute.h"
+#include "renderResources/vertexAttribute.h"
 
 
 struct VertexIterator {
