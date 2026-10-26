@@ -127,10 +127,6 @@ static float rotation = 0.f;
 void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
 	rotation += 0.5f;
 	renderResource::ResolvedDrawCommand resolvedCommand;
-	if (drawCommand.bindedTexture.isValid())
-	{
-		resolvedCommand.texture = this->textures[drawCommand.bindedTexture].get();
-	}
 	resolvedCommand.vertexBuffer = this->vertexBuffers[drawCommand.vertexBuffer].get();
 	renderResource::ResolvedDrawContext resolvedDrawContext;
 	resolvedDrawContext.config = drawContext.config;

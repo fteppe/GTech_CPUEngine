@@ -130,14 +130,7 @@ void Engine::handleEvent(const SDL_Event &event) {
 			//We reset the fire on space bar down
 			resetFire();
 		}
-
-		float moveSpeed = 0.2f;
-
-		glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir);
-
-
 		switch (event.key.key) {
-<<<<<<< HEAD
 			case SDLK_Z:
 				mainViewpoint.worldPos += forward;
 				break;
@@ -169,7 +162,6 @@ void Engine::handleEvent(const SDL_Event &event) {
 		glm::mat4 rotation = glm::rotate(glm::mat4(1.), -xMotion, up);
 		rotation = glm::rotate(rotation, -yMotion, leftDir);
 		mainViewpoint.eyeDir = rotation * glm::vec4(mainViewpoint.eyeDir, 1.);
-
 
 	}
 }
@@ -231,7 +223,6 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	// command1.vertexBuffer = terrainData.mesh;
 	// command1.vertexShader = terrainData.vs;
 	// command1.pixelShader = terrainData.ps;
-
 
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);

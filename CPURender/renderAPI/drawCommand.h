@@ -19,9 +19,6 @@ struct CommandBindedResources {
 
 struct DrawCommand {
 	ResourceHandle<renderResource::VertexBuffer> vertexBuffer;
-	ResourceHandle<renderResource::ColorTexture> bindedTexture;
-
-
 
 	ResourceHandle<VertexShader> vertexShader;
 	CommandBindedResources VS_Resources;
