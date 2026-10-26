@@ -364,3 +364,9 @@ void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> 
 
 template
 void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle,const std::vector<glm::vec2> &vertexData, size_t attributeIndex);
+
+template
+void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle,const std::vector<float> &vertexData, size_t attributeIndex);
+
+template
+void RenderAPI::updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle,const std::vector<glm::vec4> &vertexData, size_t attributeIndex);
