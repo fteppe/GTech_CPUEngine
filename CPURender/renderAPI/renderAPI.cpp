@@ -170,6 +170,15 @@ TextureHandle RenderAPI::createFrameBuffer(glm::ivec2 dims, FrameBufferType type
 	return handle;
 }
 
+VertexBufferHandle RenderAPI::createVertexBuffer(size_t size,
+	const std::vector<renderResource::VertexAttribute> attributes) {
+	auto vertexBuffer = std::make_unique<renderResource::VertexBuffer>(size, attributes);
+	auto handle = this->createHandle<renderResource::VertexBuffer>();
+	this->vertexBuffers.emplace(handle, std::move(vertexBuffer));
+	return handle;
+
+}
+
 ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const std::vector<glm::vec3>& positions,
                                                                            const std::vector<glm::vec2>& texCoords)
 {

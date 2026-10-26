@@ -16,6 +16,7 @@ class Shader;
 struct DrawContext;
 
 namespace renderResource {
+	enum class VertexAttribute;
 	struct ResolvedDrawContext;
 	struct ResolvedDrawCommand;
 	class VertexBuffer;
@@ -47,6 +48,7 @@ class RenderAPI {
 	void draw(const DrawCommand& drawCommand, DrawContext& drawContext);
 	ResourceHandle<renderResource::ColorTexture> createTexture(glm::ivec2 dims, const std::vector<Color>& textureData);
 	TextureHandle createFrameBuffer(glm::ivec2 dims, FrameBufferType type);
+	VertexBufferHandle createVertexBuffer(size_t size, const std::vector<renderResource::VertexAttribute> attributes);
 	ResourceHandle<renderResource::VertexBuffer> createVertexBuffer(const std::vector<glm::vec3>& positions, const std::vector<glm::vec2>& texCoords);
 	template<typename TVertex>
 	void updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle, const std::vector<TVertex>& vertexData, size_t attributeIndex);

@@ -1,1 +1,0 @@
-target_sources(CPURender PRIVATE ColorTexture.cpp)
