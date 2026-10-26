@@ -11,11 +11,13 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
+#include "terrainGeneration.h"
 #include "baseTypes/color.h"
 #include "renderAPI/drawCommand.h"
 #include "renderAPI/drawContext.h"
 #include "renderAPI/renderAPI.h"
 #include "shaders/shader.h"
+#include "shaders/terrainShader.h"
 
 
 /* Doom fire variables and color palette */
@@ -91,6 +93,12 @@ void Engine::init(SDL_Window* windowIn) {
 	ps = renderAPI.createPixelShader<BasePixelShader>();
 	cb = renderAPI.createConstantBuffer<GlobalConstantBuffer>();
 
+	TerrainGenerationParams genParams;
+	genParams.tileCount = {64,64};
+	genParams.terrainSize = {1.f, 1.f};
+	terrainData.mesh = generateTerrain(renderAPI, genParams);
+	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
+	terrainData.ps = renderAPI.createPixelShader<TerrainPixelShader>();
 	free(data);
 	resetFire();
 }
@@ -182,9 +190,14 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
-	command1.vertexBuffer = quadMesh;
-	command1.vertexShader = vs;
-	command1.pixelShader = ps;
+	// command1.vertexBuffer = quadMesh;
+	// command1.vertexShader = vs;
+	// command1.pixelShader = ps;
+
+	command1.vertexBuffer = terrainData.mesh;
+	command1.vertexShader = terrainData.vs;
+	command1.pixelShader = terrainData.ps;
+
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);
 	renderAPI.draw(command1, context);

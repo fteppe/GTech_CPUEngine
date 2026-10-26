@@ -46,8 +46,9 @@ class TerrainGenerator {
 			angles.xBefore = angleToUpXY[linearizeCoord({coord.x - 1, coord.y}, heightPointCount)].x;
 		}
 		if (coord.y > 0) {
-			angles.yBefore = angleToUpXY[linearizeCoord({coord.x - 1, coord.y}, heightPointCount)].y;
+			angles.yBefore = angleToUpXY[linearizeCoord({coord.x, coord.y - 1}, heightPointCount)].y;
 		}
+		return angles;
 	}
 
 	float getAngleOnAxisForPoint(float angleBefore, float angleAfter, int posInEdge) {
@@ -84,11 +85,11 @@ public:
 			glm::ivec2 coord = getCoord(i, heightPointCount);
 			float currentHeight = heightMap[linearizeCoord(coord, heightPointCount)];
 			float nextHeight_X = currentHeight;
-			if (coord.x < heightPointCount.x) {
+			if (coord.x < heightPointCount.x - 1) {
 				nextHeight_X = heightMap[linearizeCoord({coord.x + 1, coord.y}, heightPointCount)];
 			}
 			float nextHeight_Y = currentHeight;
-			if (coord.y < heightPointCount.y) {
+			if (coord.y < heightPointCount.y - 1) {
 				nextHeight_Y = heightMap[linearizeCoord({coord.x, coord.y + 1}, heightPointCount)];
 			}
 			glm::vec2 dz_xy = glm::vec2(nextHeight_X - currentHeight, nextHeight_Y - currentHeight);
@@ -98,7 +99,7 @@ public:
 			angleToUpXY[i] = glm::vec2(angleToUpX, angleToUpY);
 		}
 
-		std::vector<glm::vec3> positions; positions.resize(angleToUpXY.size() * 6);
+		std::vector<glm::vec3> positions; positions.resize(params.tileCount.x * params.tileCount.y * 6);
 		std::vector<glm::vec3> normals; normals.resize(positions.size());
 
 		for (int i = 0 ; i < positions.size(); i++) {
@@ -110,7 +111,7 @@ public:
 
 			float height = heightMap[linearizeCoord(pointCoord, heightPointCount)];
 
-			positions[i] = glm::vec3(pointCoord.x * edgeLength, pointCoord.y * edgeLength, height);
+			positions[i] = glm::vec3(pointCoord.x * edgeLength, height, pointCoord.y * edgeLength);
 		}
 
 
@@ -127,7 +128,7 @@ public:
 			float yAngle = getAngleOnAxisForPoint(angles.yBefore, angles.yAfter, coordInQuad.y);
 			glm::vec2 normalXY(std::cos(xAngle), std::cos(yAngle));
 			//x²+y²+z² = 1 => z² = 1 - x² - y ² => z = sqrt(1 - x² - y ²)
-			glm::vec3 vertexNormal = glm::vec3(normalXY.x, normalXY.y, std::sqrt(1 - glm::dot(normalXY, normalXY)));
+			glm::vec3 vertexNormal = glm::vec3(normalXY.x, std::sqrt(1 - glm::dot(normalXY, normalXY)), normalXY.y);
 			normals[i] = vertexNormal;
 		}
 

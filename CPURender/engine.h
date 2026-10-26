@@ -38,5 +38,13 @@ protected:
 	ResourceHandle<PixelShader> ps;
 	ResourceHandle<ConstantBuffer> cb;
 
+	struct TerrainData {
+		ResourceHandle<VertexShader> vs;
+		ResourceHandle<PixelShader> ps;
+		VertexBufferHandle mesh;
+	};
+
+	TerrainData terrainData;
+
 	SDL_Window* window = nullptr;
 };

@@ -24,6 +24,8 @@ using AttributesList = std::vector<renderResource::VertexAttribute>;
 	AttributesList PS_inputAttributes = renderResource::createAttributesVector<PS_Inputs>();\
 	virtual const AttributesList& getInputs() const override {return PS_inputAttributes;};
 
+#define BIND_CB(bufferName, BufferType, bindingPoint) BufferType bufferName() const {return getConstantBuffer<BufferType>(bindingPoint);}
+
 class Shader {
 public:
 	template<typename TConstantBuffer>
@@ -66,10 +68,11 @@ class BaseVertexShader : public VertexShader {
 
 
 	DEFINE_VS_INPUT_OUTPUT((glm::vec3, glm::vec2), (glm::vec4, glm::vec2));
+	BIND_CB(global, GlobalConstantBuffer, 0)
 
 	void VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const  override {
 		auto [v1, uv1] = vertexIn.getVertexAttributes<VS_Inputs>();
-		GlobalConstantBuffer buffer = getConstantBuffer<GlobalConstantBuffer>(0);
+		GlobalConstantBuffer buffer = global();
 
 		glm::vec4 v1_4 = buffer.MVP * glm::vec4(v1, 1.);
 		vertexOut.setVertexAttributes(VS_Outputs(v1_4, uv1));
