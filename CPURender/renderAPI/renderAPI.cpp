@@ -204,7 +204,7 @@ void clipIntersectEdge(ConstVertexReference v0, ConstVertexReference v1, float v
 	VertexReference refOut)
 {
 	float t = value0 / (value0 - value1);
-	refOut.setFrom1DInterpolation(v0, v1, t);
+	refOut.setFrom1DInterpolation(v0, v1, 1 - t);
 }
 
 VertexIterator clipTriangleEq(ConstVertexIterator triangleStart, glm::vec4 equation, VertexIterator result,
@@ -308,7 +308,7 @@ VertexIterator clipTriangleEq(ConstVertexIterator triangleStart, glm::vec4 equat
 	return result;
 }
 
-void clipTriangle(int begin, int end, 
+size_t clipTriangle(int begin, int end, 
 	renderResource::VertexBuffer& bufferOut, renderResource::VertexBuffer& tempBuffer
 	, VertexReference temp1, VertexReference temp2) {
 
@@ -345,9 +345,9 @@ void clipTriangle(int begin, int end,
 			}
 		}
 		assert((resultEnd.start - tempBuffer.begin().start) / resultEnd.vertexSize <= 12);
-		bufferOut.overwrite(bufferOut.begin() + begin, tempBuffer.begin(), resultEnd);
-		end = bufferOut.getVertexCount();
+		end = bufferOut.overwrite(bufferOut.begin() + begin, tempBuffer.begin(), resultEnd);
 	}
+	return end;
 }
 
 void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, renderResource::ResolvedDrawContext &drawContext) {
@@ -388,10 +388,8 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 		auto postClippingBegin = postClippingBuffer->begin();
 		postClippingBuffer->overwrite(postClippingBegin + currentVertCountInPostClippingBuffer, recycledbegin + iVert, recycledbegin + iVert + 3);
 
-		clipTriangle(currentVertCountInPostClippingBuffer, currentVertCountInPostClippingBuffer + 3,
+		currentVertCountInPostClippingBuffer = clipTriangle(currentVertCountInPostClippingBuffer, currentVertCountInPostClippingBuffer + 3,
 			*postClippingBuffer, tempClippingBuffer, inPlaceVertex1.getVertexReference(), inPlaceVertex2.getVertexReference());
-
-		currentVertCountInPostClippingBuffer = postClippingBuffer->getVertexCount();
 	}
 
 	Logger::Log("pos clip mesh has %d vertices, %d vertices created", postClippingBuffer->getVertexCount(), postClippingBuffer->getVertexCount() - recycledVertexBuffer->getVertexCount());
@@ -416,10 +414,9 @@ static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 	if (v1.y < -1. && v2.y < -1. && v3.y < -1.) {
 		return true;
 	}
-	if (v1.z < -1. && v2.z < -1. && v3.z < -1.) {
-		assert(false);
-		return true;
-	}
+	//if (v1.z < -1. && v2.z < -1. && v3.z < -1.) {
+	//	return true;
+	//}
 	
 	if (v1.x > 1. && v2.x > 1. && v3.x > 1.) {
 		return true;
@@ -427,9 +424,9 @@ static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 	if (v1.y > 1. && v2.y > 1. && v3.y > 1.) {
 		return true;
 	}
-	if (v1.z > 1. && v2.z > 1. && v3.z > 1.) {
-		return true;
-	}
+	//if (v1.z > 1. && v2.z > 1. && v3.z > 1.) {
+	//	return true;
+	//}
 	return false;
 }
 
@@ -442,7 +439,7 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	glm::vec4& v2 = vertex2.getFirst();
 	glm::vec4& v3 = vertex3.getFirst();
 
-	glm::vec3 invDepths = {1.f/v1.z, 1.f/v2.z, 1.f/v3.z};
+	glm::vec3 invDepths = {1.f/v1.w, 1.f/v2.w, 1.f/v3.w};
 	v1 = v1 * (1.f/ v1.w);
 	v2 = v2 * (1.f/ v2.w);
 	v3 = v3 * (1.f/ v3.w);

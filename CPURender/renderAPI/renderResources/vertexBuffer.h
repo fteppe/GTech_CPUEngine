@@ -60,7 +60,7 @@ namespace renderResource {
 			data.resize(fullVertexSize * vertexCount);
 		}
 
-		void overwrite(VertexIterator beginDest, ConstVertexIterator beginSrc, ConstVertexIterator endSrc);
+		size_t overwrite(VertexIterator beginDest, ConstVertexIterator beginSrc, ConstVertexIterator endSrc);
 
 	protected:
 
