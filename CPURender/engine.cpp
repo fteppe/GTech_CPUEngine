@@ -59,7 +59,6 @@ void resetFire() {
 
 void Engine::init(SDL_Window* windowIn) {
 	printf("Init engine \n");
-	SDL_CaptureMouse(true);
 	time = 0.f;
 	window = windowIn;
 	PixelData doomFace;
@@ -115,6 +114,7 @@ void Engine::init(SDL_Window* windowIn) {
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
+	SDL_CaptureMouse(true);
 
 	glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir);
 	float mouseVel = 0.01f;
@@ -125,8 +125,6 @@ void Engine::handleEvent(const SDL_Event &event) {
 		}
 
 		float moveSpeed = 0.2f;
-
-
 
 		switch (event.key.key) {
 			case SDLK_S:
@@ -152,7 +150,7 @@ void Engine::handleEvent(const SDL_Event &event) {
 		int windowX, windowY;
 		SDL_GetWindowSize(window, &windowX, &windowY);
 		glm::mat4 rotation(1.); 
-		rotation = glm::rotate(rotation, event.motion.xrel * mouseVel, { 0.,1.,0. });
+		rotation = glm::rotate(rotation, -event.motion.xrel * mouseVel, { 0.,1.,0. });
 		rotation = glm::rotate(rotation, -event.motion.yrel * mouseVel, leftVector);
 		mainCam.dir = rotation * glm::vec4(mainCam.dir, 1.f);
 	}
@@ -201,7 +199,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 
 	glm::mat4 view = glm::lookAt(mainCam.pos, mainCam.pos + mainCam.dir, {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 100.f);
+	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.01f, 100.f);
 	glm::mat4 object(1.);
 
 	object = rotate(object, time * 0.1f, {0.,1.,0.});

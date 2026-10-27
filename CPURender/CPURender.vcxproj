@@ -149,6 +149,8 @@
     <ClCompile Include="RenderAPI\renderAPI.cpp" />
     <ClCompile Include="RenderAPI\RenderResources\constantBuffer.cpp" />
     <ClCompile Include="renderAPI\renderResources\texture.cpp" />
+    <ClCompile Include="renderAPI\renderResources\vertexBuffer.cpp" />
+    <ClCompile Include="renderAPI\vertexIterator.cpp" />
     <ClCompile Include="shaders\shader.cpp" />
     <ClCompile Include="shaders\terrainShader.cpp" />
     <ClCompile Include="terrainGeneration.cpp" />

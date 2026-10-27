@@ -12,18 +12,26 @@ namespace renderResource {
 	class VertexBuffer;
 }
 
+struct ConstVertexReference;
+
 struct VertexIterator {
 	VertexIterator(uint8_t* start, size_t vertexSize) : start(start), vertexSize(vertexSize) {}
 	VertexIterator operator+(size_t offset) {
 		return VertexIterator(start + offset*vertexSize, vertexSize);
 	}
 
+	void operator++() { start += vertexSize; }
+	VertexIterator operator++(int) { VertexIterator kept(*this); ++(*this); return kept;}
+
 	bool operator!=(VertexIterator it) const {return it.start != start;}
+
+
+	VertexIterator& operator=(const ConstVertexReference& right);
 
 	friend struct VertexReference;
 	friend struct ConstVertexIterator;
+	friend class renderResource::VertexBuffer;
 
-protected:
 	uint8_t* start = nullptr;
 	size_t vertexSize = 0;
 };
@@ -36,6 +44,7 @@ struct ConstVertexIterator {
 		return ConstVertexIterator(start+offset*vertexSize, vertexSize);
 	}
 	friend struct ConstVertexReference;
+	friend class renderResource::VertexBuffer;
 
 protected:
 	const uint8_t* start = nullptr;
@@ -46,6 +55,8 @@ struct ConstVertexReference {
 	ConstVertexReference() = default;
 	ConstVertexReference(ConstVertexIterator it) : start(it.start), vertexSize(it.vertexSize) {}
 
+	//The first one should always be vec4 !
+	const glm::vec4& getFirst() { return *reinterpret_cast<const glm::vec4*>(start);}
 
 	template<typename TVertexAttrib>
 	static const uint8_t* copyToDest(const uint8_t* origin, TVertexAttrib& dest) {
@@ -67,7 +78,6 @@ struct ConstVertexReference {
 	}
 
 	friend struct VertexReference;
-	friend class renderResource::VertexBuffer;
 
 protected:
 	const uint8_t* start = nullptr;
@@ -138,7 +148,7 @@ struct VertexReference {
 	 		reinterpret_cast<float*>(start)[i] = startV1[i] * alpha +
 	 			startV2[i] * (1-alpha);
 	 	}
-	 }
+	}
 
 protected:
 	uint8_t* start = nullptr;

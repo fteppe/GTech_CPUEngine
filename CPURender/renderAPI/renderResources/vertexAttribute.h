@@ -1,6 +1,7 @@
 #pragma once
 #include "glm/vec2.hpp"
 #include "glm/vec4.hpp"
+#include "glm/vec3.hpp"
 
 template<class> 
 inline constexpr bool dependent_false_v = false;

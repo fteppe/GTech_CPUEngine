@@ -200,12 +200,123 @@ void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrame
 	}
 }
 
-
-int clipTriangle(VertexIterator verts, VertexIterator vertsEnd, glm::vec4 equation,int posInTempBuffer) {
-	
+void clipIntersectEdge(ConstVertexReference v0, ConstVertexReference v1, float value0, float value1, 
+	VertexReference refOut)
+{
+	float t = value0 / (value0 - value1);
+	refOut.setFrom1DInterpolation(v0, v1, t);
 }
 
-void clipTriangle(std::array<VertexReference, 3> tri, std::array<InPlaceVertex, 12>& tempBuffer,renderResource::VertexBuffer& verticesOut) {
+VertexIterator clipTriangleEq(ConstVertexIterator triangleStart, glm::vec4 equation, VertexIterator result,
+	VertexReference temp1, VertexReference temp2)
+{
+
+	ConstVertexReference v1 = triangleStart;
+	ConstVertexReference v2 = triangleStart + 1;
+	ConstVertexReference v3 = triangleStart + 2;
+	ConstVertexReference triangle[3] = { v1, v2, v3 };
+
+
+	float values[3] =
+	{
+		dot(v1.getFirst(), equation),
+		dot(v2.getFirst(), equation),
+		dot(v3.getFirst(), equation),
+	};
+	std::uint8_t mask = 
+		(values[0] < 0.f ? 1 : 0)
+		| (values[1] < 0.f ? 2 : 0)
+		| (values[2] < 0.f ? 4 : 0);
+
+	switch (mask)
+	{
+	case 0b000:
+		// All vertices are inside allowed half-space
+		// No clipping required, copy the triangle to output
+		
+		result++ = triangle[0];
+		result++ = triangle[1];
+		result++ = triangle[2];
+		break;
+	case 0b001:
+		// Vertex 0 is outside allowed half-space
+		// Replace it with points on edges 01 and 02
+		// And re-triangulate
+	{
+		clipIntersectEdge(triangle[0], triangle[1], values[0], values[1], temp1);
+		clipIntersectEdge(triangle[0], triangle[2], values[0], values[2], temp2);
+		
+		result++ = temp1;
+		result++ = triangle[1];
+		result++ = triangle[2];
+		result++ = temp1;
+		result++ = triangle[2];
+		result++ = temp2;
+	}
+	break;
+	case 0b010:
+		// Vertex 1 is outside allowed half-space
+		// Replace it with points on edges 10 and 12
+		// And re-triangulate
+	{
+		clipIntersectEdge(triangle[1], triangle[0], values[1], values[0], temp1);
+		clipIntersectEdge(triangle[1], triangle[2], values[1], values[2], temp2);
+		result++ = triangle[0];
+		result++ = temp1;
+		result++ = triangle[2];
+		result++ = triangle[2];
+		result++ = temp1;
+		result++ = temp2;
+	}
+	break;
+	case 0b011:
+		// Vertices 0 and 1 are outside allowed half-space
+		// Replace them with points on edges 02 and 12
+		clipIntersectEdge(triangle[0], triangle[2], values[0], values[2], result);
+		result++;
+		clipIntersectEdge(triangle[1], triangle[2], values[1], values[2], result);
+		result++ = triangle[2];
+		break;
+	case 0b100:
+		// Vertex 2 is outside allowed half-space
+		// Replace it with points on edges 20 and 21
+		// And re-triangulate
+	{
+		clipIntersectEdge(triangle[2], triangle[0], values[2], values[0], temp1);
+		clipIntersectEdge(triangle[2], triangle[1], values[2], values[1], temp2);
+		result++ = triangle[0];
+		result++ = triangle[1];
+		result++ = temp1;
+		result++ = temp1;
+		result++ = triangle[1];
+		result++ = temp2;
+	}
+	break;
+	case 0b101:
+		// Vertices 0 and 2 are outside allowed half-space
+		// Replace them with points on edges 01 and 21
+		clipIntersectEdge(triangle[0], triangle[1], values[0], values[1], result++);
+		result++ = triangle[1];
+		clipIntersectEdge(triangle[2], triangle[1], values[2], values[1], result++);
+		break;
+	case 0b110:
+		// Vertices 1 and 2 are outside allowed half-space
+		// Replace them with points on edges 10 and 20
+		result++ = triangle[0];
+		clipIntersectEdge(triangle[1], triangle[0], values[1], values[0], result++);
+		clipIntersectEdge(triangle[2], triangle[0], values[2], values[0], result++);
+		break;
+	case 0b111:
+		// All vertices are outside allowed half-space
+		// Clip the whole triangle, result is empty
+		break;
+	}
+	return result;
+}
+
+void clipTriangle(int begin, int end, 
+	renderResource::VertexBuffer& bufferOut, renderResource::VertexBuffer& tempBuffer
+	, VertexReference temp1, VertexReference temp2) {
 
 	static glm::vec4 const equations[2] =
 	{
@@ -215,16 +326,17 @@ void clipTriangle(std::array<VertexReference, 3> tri, std::array<InPlaceVertex, 
 	int posIntempBuffer = 0;
 	for (auto equation : equations)
 	{
+		auto resultEnd = tempBuffer.begin();
 		posIntempBuffer = 0;
-		posIntempBuffer = clipTriangle(tri, tempBuffer, equation, posIntempBuffer);
-
-
-
-		// end = std::copy(result, result_end, begin);
+		for (VertexIterator triangle = bufferOut.begin() + begin;  (bufferOut.begin() + end) != triangle; triangle = triangle + 3)
+		{
+			resultEnd = clipTriangleEq(triangle, equation, resultEnd, temp1, temp2);
+		}
+		std::printf("clipping created %d tris \n", (resultEnd.start - tempBuffer.begin().start) / resultEnd.vertexSize);
+		assert((resultEnd.start - tempBuffer.begin().start) / resultEnd.vertexSize <= 12);
+		bufferOut.overwrite(bufferOut.begin() + begin, tempBuffer.begin(), resultEnd);
+		end = bufferOut.getVertexCount();
 	}
-
-	// createdVertices.fill()
-	// createdVertices
 }
 
 void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, renderResource::ResolvedDrawContext &drawContext) {
@@ -235,7 +347,7 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	assert(attributeListsEqual(vsIn, drawCommand.vertexBuffer->getAttributes()));
 	assert(attributeListsEqual(vsOut, psIn));
 	recycledVertexBuffer->recycleVertexBuffer(drawCommand.vertexBuffer->getVertexCount(), vsOut);
-	postClippingBuffer->recycleVertexBuffer(0, vsOut);
+	postClippingBuffer->recycleVertexBuffer(drawCommand.vertexBuffer->getVertexCount(), vsOut);
 	ConstVertexIterator verticesInBegin = drawCommand.vertexBuffer->begin();
 	VertexIterator verticesOutBegin = recycledVertexBuffer->begin();
 
@@ -251,18 +363,29 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	//We should have a vec4 as output of the vertex shader !
 	assert(vsOut[0] == renderResource::VertexAttribute::Vec4);
 
-	std::array<InPlaceVertex, 12> tempBuffer; tempBuffer.fill(inPlaceVertex);
+	renderResource::VertexBuffer tempClippingBuffer(12, vsOut);
 
-	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
+	InPlaceVertex inPlaceVertex1(vsOut);
+	InPlaceVertex inPlaceVertex2(vsOut);
+	auto recycledbegin = recycledVertexBuffer->begin();
 
-		VertexIterator beginBuffer = recycledVertexBuffer->begin();
+	for (int iVert = 0; iVert < recycledVertexBuffer->getVertexCount(); iVert += 3) {
+
+		auto postClippingBegin = postClippingBuffer->begin();
+		postClippingBuffer->overwrite(postClippingBegin + iVert, recycledbegin + iVert, recycledbegin + iVert + 3);
+
+		clipTriangle(iVert, iVert + 3,
+			*postClippingBuffer, tempClippingBuffer, inPlaceVertex1.getVertexReference(), inPlaceVertex2.getVertexReference());
+	}
+
+	for (int iVert = 0; iVert < postClippingBuffer->getVertexCount(); iVert+=3) {
+
+		VertexIterator beginBuffer = postClippingBuffer->begin();
 		VertexIterator vert1 = beginBuffer + iVert;
 		auto vert2 = beginBuffer + iVert+1;
 		auto vert3 = beginBuffer + iVert+2;
 
 		std::array<VertexReference,3> vertices = {vert1, vert2, vert3};
-		clipTriangle(vertices, tempBuffer, *postClippingBuffer);
-
 
 		drawTriangle(drawCommand, {vert1, vert2, vert3}, drawContext);
 	}

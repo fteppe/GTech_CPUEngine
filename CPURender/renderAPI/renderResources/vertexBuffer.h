@@ -14,7 +14,7 @@ namespace renderResource {
 
 	class VertexBuffer {
 	public:
-
+		~VertexBuffer();
 		VertexBuffer(size_t vertexCount, const std::vector<VertexAttribute>& attributes) : vertexCount(vertexCount), attributes(attributes) {
 			fullVertexSize = 0;
 			for (auto attribute : attributes) {
@@ -60,7 +60,7 @@ namespace renderResource {
 			data.resize(fullVertexSize * vertexCount);
 		}
 
-		void pushBack(ConstVertexReference newVertex);
+		void overwrite(VertexIterator beginDest, ConstVertexIterator beginSrc, ConstVertexIterator endSrc);
 
 	protected:
 
@@ -71,8 +71,4 @@ namespace renderResource {
 		std::vector<size_t> attributesStartCache;
 	};
 
-	inline void VertexBuffer::pushBack(ConstVertexReference newVertex) {
-		assert(fullVertexSize == newVertex.vertexSize);
-		data.insert(data.end(), newVertex.start, newVertex.start + newVertex.vertexSize);
-	}
 }
