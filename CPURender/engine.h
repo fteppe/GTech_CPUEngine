@@ -32,7 +32,6 @@ protected:
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
 	ResourceHandle<renderResource::Texture> frameBuffer;
 	ResourceHandle<renderResource::Texture> depthBuffer;
-	glm::ivec2 doomHeadPos = glm::ivec2(0);
 
 	ResourceHandle<VertexShader> vs;
 	ResourceHandle<PixelShader> ps;
@@ -46,5 +45,10 @@ protected:
 
 	TerrainData terrainData;
 
+	struct Viewpoint {
+		glm::vec3 worldPos = glm::vec3(0.,0.,-1.);
+		glm::vec3 eyeDir = glm::vec3(0.,0.,1.);
+	};
+	Viewpoint mainViewpoint;
 	SDL_Window* window = nullptr;
 };

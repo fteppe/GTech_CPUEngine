@@ -104,23 +104,37 @@ void Engine::init(SDL_Window* windowIn) {
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
+
+	float moveVel = 0.2f;
+	glm::vec3 leftDir = glm::cross(glm::vec3(0.,1.,0.), mainViewpoint.eyeDir) * moveVel;
+	glm::vec3 forward = mainViewpoint.eyeDir * moveVel;
+	glm::vec3 up = glm::vec3(0.,1.,0.) * moveVel;
+	float rotationSensitivity = 0.1f;
+
+
 	if (event.type == SDL_EVENT_KEY_DOWN) {
 		if (event.key.key == SDLK_SPACE) {
 			//We reset the fire on space bar down
 			resetFire();
 		}
 		switch (event.key.key) {
-			case SDLK_UP:
-				doomHeadPos.y--;
+			case SDLK_Z:
+				mainViewpoint.worldPos += forward;
 				break;
-			case SDLK_DOWN:
-				doomHeadPos.y++;
+			case SDLK_S:
+				mainViewpoint.worldPos -= forward;
 				break;
-			case SDLK_LEFT:
-				doomHeadPos.x--;
+			case SDLK_Q:
+				mainViewpoint.worldPos += leftDir;
 				break;
-			case SDLK_RIGHT:
-				doomHeadPos.x++;
+			case SDLK_D:
+				mainViewpoint.worldPos -= leftDir;
+				break;
+			case SDLK_A:
+				mainViewpoint.worldPos -= up;
+				break;
+			case SDLK_E:
+				mainViewpoint.worldPos += up;
 				break;
 		}
 	}
@@ -129,8 +143,13 @@ void Engine::handleEvent(const SDL_Event &event) {
 		SDL_GetMouseState(&x, &y);
 		int windowX, windowY;
 		SDL_GetWindowSize(window, &windowX, &windowY);
-		doomHeadPos.x = x/(float(windowX) / WIDTH);
-		doomHeadPos.y = y/(float(windowY) / HEIGHT);
+		float xMotion = event.motion.xrel / windowX;
+		float yMotion = event.motion.yrel / windowY;
+
+		glm::mat4 rotation = glm::rotate(glm::mat4(1.), xMotion, up);
+		rotation = glm::rotate(rotation, yMotion, leftDir);
+		mainViewpoint.eyeDir = rotation * glm::vec4(mainViewpoint.eyeDir, 1.);
+
 	}
 }
 
@@ -161,9 +180,6 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	DrawContext context;
 	context.color = frameBuffer;
 	context.depth= depthBuffer;
-	glm::vec2 doomHeadPosClipspace = glm::vec2(float(doomHeadPos.x) / WIDTH, float(doomHeadPos.y) / HEIGHT) * 2.f - 1.f;
-	//doomHeadPosClipspace.y=-doomHeadPosClipspace.y;
-	//renderAPI.drawTextureAt(doomHead, doomHeadPosClipspace, frameBufferOut);
 	renderAPI.clearRenderContext(Color::fromUNorm(0.2,0.2,0.2), Depth(std::numeric_limits<uint32_t>::max()), context);
 
 	/* Fire render */
@@ -175,28 +191,25 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	// glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
-	//
-	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 
-	glm::mat4 view = glm::lookAt(glm::vec3(0., 0., -1.), glm::vec3(0.,0.,1.), {0.,1.,0.});
+	glm::mat4 view = glm::lookAt(mainViewpoint.worldPos, mainViewpoint.worldPos + mainViewpoint.eyeDir, {0.,1.,0.});
 	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 100.f);
 	glm::mat4 object(1.);
 
-	object = rotate(object, time * 0.1f, {0.,1.,0.});
+	// object = rotate(object, time * 0.1f, {0.,1.,0.});
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
 	renderAPI.updateBuffer(cb, buffer);
 
 	DrawCommand command1;
 	command1.bindedTexture = doomHead;
-	// command1.vertexBuffer = quadMesh;
-	// command1.vertexShader = vs;
-	// command1.pixelShader = ps;
+	command1.vertexBuffer = quadMesh;
+	command1.vertexShader = vs;
+	command1.pixelShader = ps;
 
-	command1.vertexBuffer = terrainData.mesh;
-	command1.vertexShader = terrainData.vs;
-	command1.pixelShader = terrainData.ps;
+	// command1.vertexBuffer = terrainData.mesh;
+	// command1.vertexShader = terrainData.vs;
+	// command1.pixelShader = terrainData.ps;
 
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);
