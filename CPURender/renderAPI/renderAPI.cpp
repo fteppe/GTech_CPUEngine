@@ -82,6 +82,7 @@ static glm::vec3 getBarycentricCoord(glm::vec<2, TComponent> v1, glm::vec<2, TCo
 
 RenderAPI::RenderAPI() {
 	recycledVertexBuffer = std::make_unique<renderResource::VertexBuffer>(0, std::vector<renderResource::VertexAttribute>());
+	postClippingBuffer = std::make_unique<renderResource::VertexBuffer>(0, std::vector<renderResource::VertexAttribute>());
 }
 
 RenderAPI::~RenderAPI() {
@@ -202,6 +203,33 @@ void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrame
 	}
 }
 
+
+int clipTriangle(VertexIterator verts, VertexIterator vertsEnd, glm::vec4 equation,int posInTempBuffer) {
+	
+}
+
+void clipTriangle(std::array<VertexReference, 3> tri, std::array<InPlaceVertex, 12>& tempBuffer,renderResource::VertexBuffer& verticesOut) {
+
+	static glm::vec4 const equations[2] =
+	{
+		{0.f, 0.f,  1.f, 1.f}, // Z > -W  <=>   Z + W > 0
+		{0.f, 0.f, -1.f, 1.f}, // Z <  W  <=> - Z + W > 0
+	};
+	int posIntempBuffer = 0;
+	for (auto equation : equations)
+	{
+		posIntempBuffer = 0;
+		posIntempBuffer = clipTriangle(tri, tempBuffer, equation, posIntempBuffer);
+
+
+
+		// end = std::copy(result, result_end, begin);
+	}
+
+	// createdVertices.fill()
+	// createdVertices
+}
+
 void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, renderResource::ResolvedDrawContext &drawContext) {
 
 	auto vsInOut = drawCommand.vertexShader->getInputOutputs();
@@ -210,6 +238,7 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	assert(attributeListsEqual(vsIn, drawCommand.vertexBuffer->getAttributes()));
 	assert(attributeListsEqual(vsOut, psIn));
 	recycledVertexBuffer->recycleVertexBuffer(drawCommand.vertexBuffer->getVertexCount(), vsOut);
+	postClippingBuffer->recycleVertexBuffer(0, vsOut);
 	ConstVertexIterator verticesInBegin = drawCommand.vertexBuffer->begin();
 	VertexIterator verticesOutBegin = recycledVertexBuffer->begin();
 
@@ -219,17 +248,24 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 		drawCommand.vertexShader->VS_MAIN(iVert, vertex1, vertexOut);
 	}
 
-	InPlaceVertex InPlaceVertex(vsOut);
-	VertexReference interpolatedVertexRef = InPlaceVertex.getVertexReference();
+	InPlaceVertex inPlaceVertex(vsOut);
+	VertexReference interpolatedVertexRef = inPlaceVertex.getVertexReference();
 	drawContext.interpolatedVertexRef = interpolatedVertexRef;
 	//We should have a vec4 as output of the vertex shader !
 	assert(vsOut[0] == renderResource::VertexAttribute::Vec4);
+
+	std::array<InPlaceVertex, 12> tempBuffer; tempBuffer.fill(inPlaceVertex);
+
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
 
 		VertexIterator beginBuffer = recycledVertexBuffer->begin();
 		VertexIterator vert1 = beginBuffer + iVert;
 		auto vert2 = beginBuffer + iVert+1;
 		auto vert3 = beginBuffer + iVert+2;
+
+		std::array<VertexReference,3> vertices = {vert1, vert2, vert3};
+		clipTriangle(vertices, tempBuffer, *postClippingBuffer);
+
 
 		drawTriangle(drawCommand, {vert1, vert2, vert3}, drawContext);
 	}

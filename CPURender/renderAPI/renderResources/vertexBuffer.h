@@ -40,7 +40,6 @@ namespace renderResource {
 			}
 		}
 
-
 		ConstVertexIterator begin() const {
 			return ConstVertexIterator(&this->data[0], this->fullVertexSize);
 		}
@@ -61,8 +60,9 @@ namespace renderResource {
 			data.resize(fullVertexSize * vertexCount);
 		}
 
-	protected:
+		void pushBack(ConstVertexReference newVertex);
 
+	protected:
 
 		std::vector<uint8_t> data;
 		std::vector<VertexAttribute> attributes;
@@ -71,4 +71,8 @@ namespace renderResource {
 		std::vector<size_t> attributesStartCache;
 	};
 
+	inline void VertexBuffer::pushBack(ConstVertexReference newVertex) {
+		assert(fullVertexSize == newVertex.vertexSize);
+		data.insert(data.end(), newVertex.start, newVertex.start + newVertex.vertexSize);
+	}
 }

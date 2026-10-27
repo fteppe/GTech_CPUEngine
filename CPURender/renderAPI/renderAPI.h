@@ -107,6 +107,8 @@ protected:
 
 	//This one is used for the output of vertex Shader execution
 	std::unique_ptr<renderResource::VertexBuffer> recycledVertexBuffer;
+	//This one will have potentially more triangles, because clipping creates some
+	std::unique_ptr<renderResource::VertexBuffer> postClippingBuffer;
 };
 
 

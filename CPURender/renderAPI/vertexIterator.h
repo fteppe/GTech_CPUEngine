@@ -3,15 +3,23 @@
 #include <cstdint>
 #include <tuple>
 #include <array>
+#include <cstring>
 
 #include "renderResources/vertexAttribute.h"
 
+
+namespace renderResource {
+	class VertexBuffer;
+}
 
 struct VertexIterator {
 	VertexIterator(uint8_t* start, size_t vertexSize) : start(start), vertexSize(vertexSize) {}
 	VertexIterator operator+(size_t offset) {
 		return VertexIterator(start + offset*vertexSize, vertexSize);
 	}
+
+	bool operator!=(VertexIterator it) const {return it.start != start;}
+
 	friend struct VertexReference;
 	friend struct ConstVertexIterator;
 
@@ -59,6 +67,7 @@ struct ConstVertexReference {
 	}
 
 	friend struct VertexReference;
+	friend class renderResource::VertexBuffer;
 
 protected:
 	const uint8_t* start = nullptr;
@@ -85,6 +94,12 @@ struct VertexReference {
 		}, tupleIn);
 	}
 
+	VertexReference& operator=(ConstVertexReference right) {
+		assert(vertexSize == right.vertexSize);
+		memcpy(start, right.start, right.vertexSize);
+		return *this;
+	}
+
 	//The first one should always be vec4 !
 	glm::vec4& getFirst() { return *reinterpret_cast<glm::vec4*>(start);}
 
@@ -102,12 +117,28 @@ struct VertexReference {
 		assert(vertexSize % sizeof(float) == 0);
 		//Because all vertex attributes are float, we can interpolate them this way
 		//doesn't matter if it is 2 floats or a glmvec2
+	 	const float* startV1 = reinterpret_cast<const float*>(v1.start);
+	 	const float* startV2 = reinterpret_cast<const float*>(v2.start);
+	 	const float* startV3 = reinterpret_cast<const float*>(v3.start);
 		for (size_t i = 0 ; i < vertexSize/sizeof(float) ; ++i) {
-			reinterpret_cast<float*>(start)[i] = reinterpret_cast<const float*>(v1.start)[i] * lambda.x +
-				reinterpret_cast<const float*>(v2.start)[i] * lambda.y +
-				reinterpret_cast<const float*>(v3.start)[i] * lambda.z;
+			reinterpret_cast<float*>(start)[i] = startV1[i] * lambda.x +
+				startV2[i] * lambda.y +
+				startV3[i] * lambda.z;
 		}
 	}
+
+	void setFrom1DInterpolation(ConstVertexReference v1,ConstVertexReference v2, float alpha) {
+	 	assert(vertexSize == v1.vertexSize && vertexSize == v2.vertexSize);
+	 	assert(vertexSize % sizeof(float) == 0);
+	 	const float* startV1 = reinterpret_cast<const float*>(v1.start);
+	 	const float* startV2 = reinterpret_cast<const float*>(v2.start);
+	 	//Because all vertex attributes are float, we can interpolate them this way
+	 	//doesn't matter if it is 2 floats or a glmvec2
+	 	for (size_t i = 0 ; i < vertexSize/sizeof(float) ; ++i) {
+	 		reinterpret_cast<float*>(start)[i] = startV1[i] * alpha +
+	 			startV2[i] * (1-alpha);
+	 	}
+	 }
 
 protected:
 	uint8_t* start = nullptr;
