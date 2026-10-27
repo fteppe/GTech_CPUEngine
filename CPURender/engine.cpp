@@ -10,7 +10,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
-#include <SDL3/SDL_log.h>
 
 #include "terrainGeneration.h"
 #include "baseTypes/color.h"
@@ -19,6 +18,7 @@
 #include "renderAPI/renderAPI.h"
 #include "shaders/shader.h"
 #include "shaders/terrainShader.h"
+#include "logger.h"
 
 
 /* Doom fire variables and color palette */
@@ -59,7 +59,7 @@ void resetFire() {
 
 void Engine::init(SDL_Window* windowIn) {
 	printf("Init engine \n");
-	mouseCaptured = SDL_SetWindowRelativeMouseMode(window, true);
+	SDL_CaptureMouse(true);
 	time = 0.f;
 	window = windowIn;
 	PixelData doomFace;
@@ -116,38 +116,33 @@ void Engine::init(SDL_Window* windowIn) {
 
 void Engine::handleEvent(const SDL_Event &event) {
 
-	float moveVel = 0.2f;
-	glm::vec3 leftDir = glm::cross(glm::vec3(0.,1.,0.), mainViewpoint.eyeDir) * moveVel;
-	glm::vec3 forward = mainViewpoint.eyeDir * moveVel;
-	glm::vec3 up = glm::vec3(0.,1.,0.) * moveVel;
-	float rotationSensitivity = 0.1f;
-
-	if (!mouseCaptured)
-		mouseCaptured = SDL_SetWindowRelativeMouseMode(window, true);
-
+	glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir);
+	float mouseVel = 0.01f;
 	if (event.type == SDL_EVENT_KEY_DOWN) {
 		if (event.key.key == SDLK_SPACE) {
 			//We reset the fire on space bar down
 			resetFire();
 		}
+
+		float moveSpeed = 0.2f;
+
+
+
 		switch (event.key.key) {
-			case SDLK_Z:
-				mainViewpoint.worldPos += forward;
-				break;
 			case SDLK_S:
-				mainViewpoint.worldPos -= forward;
+				mainCam.pos -= mainCam.dir * moveSpeed;
+				break;
+			case SDLK_Z:
+				mainCam.pos += mainCam.dir * moveSpeed;
 				break;
 			case SDLK_Q:
-				mainViewpoint.worldPos += leftDir;
+				mainCam.pos += leftVector * moveSpeed;
 				break;
 			case SDLK_D:
-				mainViewpoint.worldPos -= leftDir;
+				mainCam.pos -= leftVector * moveSpeed;
 				break;
-			case SDLK_A:
-				mainViewpoint.worldPos -= up;
-				break;
-			case SDLK_E:
-				mainViewpoint.worldPos += up;
+			case SDLK_P:
+				Logger::LogThisFrame();
 				break;
 		}
 	}
@@ -156,13 +151,10 @@ void Engine::handleEvent(const SDL_Event &event) {
 		SDL_GetMouseState(&x, &y);
 		int windowX, windowY;
 		SDL_GetWindowSize(window, &windowX, &windowY);
-		float xMotion = event.motion.xrel / windowX;
-		float yMotion = event.motion.yrel / windowY;
-
-		glm::mat4 rotation = glm::rotate(glm::mat4(1.), -xMotion, up);
-		rotation = glm::rotate(rotation, -yMotion, leftDir);
-		mainViewpoint.eyeDir = rotation * glm::vec4(mainViewpoint.eyeDir, 1.);
-
+		glm::mat4 rotation(1.); 
+		rotation = glm::rotate(rotation, event.motion.xrel * mouseVel, { 0.,1.,0. });
+		rotation = glm::rotate(rotation, -event.motion.yrel * mouseVel, leftVector);
+		mainCam.dir = rotation * glm::vec4(mainCam.dir, 1.f);
 	}
 }
 
@@ -204,25 +196,27 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
+	// glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
+	//
+	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 
-	glm::mat4 view = glm::lookAt(mainViewpoint.worldPos, mainViewpoint.worldPos + mainViewpoint.eyeDir, {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.01f, 1000.f);
+	glm::mat4 view = glm::lookAt(mainCam.pos, mainCam.pos + mainCam.dir, {0.,1.,0.});
+	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 100.f);
 	glm::mat4 object(1.);
 
-	// object = rotate(object, time * 0.1f, {0.,1.,0.});
+	object = rotate(object, time * 0.1f, {0.,1.,0.});
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
 	renderAPI.updateBuffer(cb, buffer);
 
 	DrawCommand command1;
-	command1.bindedTexture = doomHead;
 	command1.vertexBuffer = quadMesh;
 	command1.vertexShader = vs;
 	command1.pixelShader = ps;
 
-	// command1.vertexBuffer = terrainData.mesh;
-	// command1.vertexShader = terrainData.vs;
-	// command1.pixelShader = terrainData.ps;
+	//command1.vertexBuffer = terrainData.mesh;
+	//command1.vertexShader = terrainData.vs;
+	//command1.pixelShader = terrainData.ps;
 
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);
@@ -233,7 +227,8 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = duration_cast<std::chrono::milliseconds>(end - start);
-	printf("frametime is %d ms\n", duration.count());
+	Logger::Log("frametime is %d ms\n", duration.count());
+	Logger::endFrame();
 }
 
 void Engine::destroy() {

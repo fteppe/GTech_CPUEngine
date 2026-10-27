@@ -14,6 +14,7 @@
 #include "renderResources/resolvedDrawCommand.h"
 #include "renderResources/texture.h"
 #include "renderResources/vertexBuffer.h"
+#include "../logger.h"
 
 static glm::ivec3 setToScreenSpace(glm::vec3 clipSpace, glm::ivec2 screenDims) {
 	glm::ivec3 screenSpace;
@@ -314,6 +315,8 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	glm::vec2 v2_2d = {v2.x, v2.y};
 	glm::vec2 v3_2d = {v3.x, v3.y};
 
+	Logger::Log("v1 (%f, %f), v2 (%f, %f), v3 (%f, %f) \n", v1_2d.x, v2_2d.y, v2_2d.x, v1_2d.y, v3_2d.x, v3_2d.y);
+
 	glm::vec3 minBox = glm::min(glm::min(v1, v2), v3);
 	glm::vec3 maxBox = glm::max(glm::max(v1, v2), v3);
 
@@ -324,6 +327,9 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);
+
+
+	Logger::Log("iMinBox (%d, %d), iMaxBox (%d, %d) \n", iMinBox.x, iMinBox.y, iMaxBox.x, iMaxBox.y);
 
 	float triangleAreaInv = 1 / areaOfTriangle(v1_2d, v2_2d, v3_2d);
 	for (int i = iMinBox.x; i < iMaxBox.x; i++) {

@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="engine.cpp" />
+    <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RenderAPI\drawCommand.cpp" />
     <ClCompile Include="RenderAPI\drawContext.cpp" />
@@ -155,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="baseTypes\color.h" />
     <ClInclude Include="engine.h" />
+    <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="RenderAPI\drawCommand.h" />
     <ClInclude Include="RenderAPI\drawContext.h" />
