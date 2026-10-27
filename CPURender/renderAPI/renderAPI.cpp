@@ -470,8 +470,8 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	Logger::Log("iMinBox (%d, %d), iMaxBox (%d, %d) \n", iMinBox.x, iMinBox.y, iMaxBox.x, iMaxBox.y);
 
 	float triangleAreaInv = 1 / areaOfTriangle(v1_2d, v2_2d, v3_2d);
-	for (int i = iMinBox.x; i < iMaxBox.x; i++) {
-		for (int j = iMinBox.y; j < iMaxBox.y; j++) {
+	for (int i = iMinBox.x; i <= iMaxBox.x; i++) {
+		for (int j = iMinBox.y; j <= iMaxBox.y; j++) {
 			glm::ivec3 point(i,j,0);
 			glm::vec2 floatingPoint = fromScreenToClip({i,j}, screenDims);
 
