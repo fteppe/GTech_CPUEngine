@@ -208,13 +208,13 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	renderAPI.updateBuffer(cb, buffer);
 
 	DrawCommand command1;
-	//command1.vertexBuffer = quadMesh;
-	//command1.vertexShader = vs;
-	//command1.pixelShader = ps;
+	command1.vertexBuffer = quadMesh;
+	command1.vertexShader = vs;
+	command1.pixelShader = ps;
 
-	command1.vertexBuffer = terrainData.mesh;
-	command1.vertexShader = terrainData.vs;
-	command1.pixelShader = terrainData.ps;
+	//command1.vertexBuffer = terrainData.mesh;
+	//command1.vertexShader = terrainData.vs;
+	//command1.pixelShader = terrainData.ps;
 
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);

@@ -487,7 +487,7 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 					baryCentricCoord.z * invDepths.z * gammaInv
 				};
 				drawContext.interpolatedVertexRef.setFromInterpolation(vertex1, vertex2, vertex3, depthCorrectedCoord);
-				float depth = drawContext.interpolatedVertexRef.getFirst().z;
+				float depth = drawContext.interpolatedVertexRef.getFirst().z * 0.5f + 0.5f;
 
 				if (depth > 0. && depth < 1.)
 				{
