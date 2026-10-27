@@ -10,6 +10,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <SDL3/SDL_log.h>
 
 #include "terrainGeneration.h"
 #include "baseTypes/color.h"
@@ -58,6 +59,7 @@ void resetFire() {
 
 void Engine::init(SDL_Window* windowIn) {
 	printf("Init engine \n");
+	mouseCaptured = SDL_SetWindowRelativeMouseMode(window, true);
 	time = 0.f;
 	window = windowIn;
 	PixelData doomFace;
@@ -111,6 +113,8 @@ void Engine::handleEvent(const SDL_Event &event) {
 	glm::vec3 up = glm::vec3(0.,1.,0.) * moveVel;
 	float rotationSensitivity = 0.1f;
 
+	if (!mouseCaptured)
+		mouseCaptured = SDL_SetWindowRelativeMouseMode(window, true);
 
 	if (event.type == SDL_EVENT_KEY_DOWN) {
 		if (event.key.key == SDLK_SPACE) {
@@ -146,8 +150,8 @@ void Engine::handleEvent(const SDL_Event &event) {
 		float xMotion = event.motion.xrel / windowX;
 		float yMotion = event.motion.yrel / windowY;
 
-		glm::mat4 rotation = glm::rotate(glm::mat4(1.), xMotion, up);
-		rotation = glm::rotate(rotation, yMotion, leftDir);
+		glm::mat4 rotation = glm::rotate(glm::mat4(1.), -xMotion, up);
+		rotation = glm::rotate(rotation, -yMotion, leftDir);
 		mainViewpoint.eyeDir = rotation * glm::vec4(mainViewpoint.eyeDir, 1.);
 
 	}
@@ -193,7 +197,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 
 	glm::mat4 view = glm::lookAt(mainViewpoint.worldPos, mainViewpoint.worldPos + mainViewpoint.eyeDir, {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(glm::degrees(90.f)), 4./3, 0.01f, 100.f);
+	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.01f, 1000.f);
 	glm::mat4 object(1.);
 
 	// object = rotate(object, time * 0.1f, {0.,1.,0.});

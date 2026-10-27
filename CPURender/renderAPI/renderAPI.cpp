@@ -171,12 +171,11 @@ TextureHandle RenderAPI::createFrameBuffer(glm::ivec2 dims, FrameBufferType type
 }
 
 VertexBufferHandle RenderAPI::createVertexBuffer(size_t size,
-	const std::vector<renderResource::VertexAttribute> attributes) {
+	const std::vector<renderResource::VertexAttribute>& attributes) {
 	auto vertexBuffer = std::make_unique<renderResource::VertexBuffer>(size, attributes);
 	auto handle = this->createHandle<renderResource::VertexBuffer>();
 	this->vertexBuffers.emplace(handle, std::move(vertexBuffer));
 	return handle;
-
 }
 
 ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const std::vector<glm::vec3>& positions,
@@ -226,7 +225,13 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	//We should have a vec4 as output of the vertex shader !
 	assert(vsOut[0] == renderResource::VertexAttribute::Vec4);
 	for (int iVert = 0; iVert < drawCommand.vertexBuffer->getVertexCount(); iVert+=3) {
-		drawTriangle(drawCommand, iVert, drawContext);
+
+		VertexIterator beginBuffer = recycledVertexBuffer->begin();
+		VertexIterator vert1 = beginBuffer + iVert;
+		auto vert2 = beginBuffer + iVert+1;
+		auto vert3 = beginBuffer + iVert+2;
+
+		drawTriangle(drawCommand, {vert1, vert2, vert3}, drawContext);
 	}
 }
 
@@ -253,13 +258,10 @@ static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 	return false;
 }
 
-void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, size_t startIndex,
+void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command, std::array<VertexReference, 3> vertices,
 	renderResource::ResolvedDrawContext &drawContext) {
 
-	VertexIterator VerticesBegin = recycledVertexBuffer->begin();
-	VertexReference vertex1 = VerticesBegin + startIndex;
-	VertexReference vertex2 = VerticesBegin + startIndex + 1;
-	VertexReference vertex3 = VerticesBegin + startIndex + 2;
+	auto [vertex1, vertex2, vertex3] = vertices;
 
 	glm::vec4& v1 = vertex1.getFirst();
 	glm::vec4& v2 = vertex2.getFirst();

@@ -51,4 +51,5 @@ protected:
 	};
 	Viewpoint mainViewpoint;
 	SDL_Window* window = nullptr;
+	bool mouseCaptured = false;
 };

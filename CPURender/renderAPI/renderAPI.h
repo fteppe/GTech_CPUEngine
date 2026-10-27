@@ -5,6 +5,7 @@
 #include <glm/vec3.hpp>
 #include "renderResources/constantBuffer.h"
 #include "resourceHandle.h"
+#include "vertexIterator.h"
 #include "glm/vec2.hpp"
 
 struct CommandBindedResources;
@@ -48,7 +49,7 @@ class RenderAPI {
 	void draw(const DrawCommand& drawCommand, DrawContext& drawContext);
 	ResourceHandle<renderResource::ColorTexture> createTexture(glm::ivec2 dims, const std::vector<Color>& textureData);
 	TextureHandle createFrameBuffer(glm::ivec2 dims, FrameBufferType type);
-	VertexBufferHandle createVertexBuffer(size_t size, const std::vector<renderResource::VertexAttribute> attributes);
+	VertexBufferHandle createVertexBuffer(size_t size, const std::vector<renderResource::VertexAttribute>& attributes);
 	ResourceHandle<renderResource::VertexBuffer> createVertexBuffer(const std::vector<glm::vec3>& positions, const std::vector<glm::vec2>& texCoords);
 	template<typename TVertex>
 	void updateVertexBuffer(ResourceHandle<renderResource::VertexBuffer> handle, const std::vector<TVertex>& vertexData, size_t attributeIndex);
@@ -94,7 +95,7 @@ protected:
 	ResourceHandle<TResource> createHandle();
 
 	void draw(const renderResource::ResolvedDrawCommand& drawCommand, renderResource::ResolvedDrawContext& drawContext);
-	void drawTriangle(const renderResource::ResolvedDrawCommand& command, size_t startIndex, renderResource::ResolvedDrawContext& drawContext);
+	void drawTriangle(const renderResource::ResolvedDrawCommand& command, std::array<VertexReference, 3> vertices, renderResource::ResolvedDrawContext& drawContext);
 	void resolveShaderResources(Shader& shaderIn, const CommandBindedResources& bindedResources);
 
 	std::unordered_map<ColorTextureHandle, std::unique_ptr<renderResource::ColorTexture>> textures;
