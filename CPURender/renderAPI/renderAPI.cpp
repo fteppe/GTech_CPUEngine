@@ -210,18 +210,13 @@ void clipIntersectEdge(ConstVertexReference v0, ConstVertexReference v1, float v
 VertexIterator clipTriangleEq(ConstVertexIterator triangleStart, glm::vec4 equation, VertexIterator result,
 	VertexReference temp1, VertexReference temp2)
 {
-
-	ConstVertexReference v1 = triangleStart;
-	ConstVertexReference v2 = triangleStart + 1;
-	ConstVertexReference v3 = triangleStart + 2;
-	ConstVertexReference triangle[3] = { v1, v2, v3 };
-
+	ConstVertexReference triangle[3] = { triangleStart, triangleStart + 1,  triangleStart + 2 };
 
 	float values[3] =
 	{
-		dot(v1.getFirst(), equation),
-		dot(v2.getFirst(), equation),
-		dot(v3.getFirst(), equation),
+		dot(triangle[0].getFirst(), equation),
+		dot(triangle[1].getFirst(), equation),
+		dot(triangle[2].getFirst(), equation),
 	};
 	std::uint8_t mask = 
 		(values[0] < 0.f ? 1 : 0)
@@ -272,9 +267,8 @@ VertexIterator clipTriangleEq(ConstVertexIterator triangleStart, glm::vec4 equat
 	case 0b011:
 		// Vertices 0 and 1 are outside allowed half-space
 		// Replace them with points on edges 02 and 12
-		clipIntersectEdge(triangle[0], triangle[2], values[0], values[2], result);
-		result++;
-		clipIntersectEdge(triangle[1], triangle[2], values[1], values[2], result);
+		clipIntersectEdge(triangle[0], triangle[2], values[0], values[2], result++);
+		clipIntersectEdge(triangle[1], triangle[2], values[1], values[2], result++);
 		result++ = triangle[2];
 		break;
 	case 0b100:
@@ -324,6 +318,14 @@ void clipTriangle(int begin, int end,
 		{0.f, 0.f, -1.f, 1.f}, // Z <  W  <=> - Z + W > 0
 	};
 	int posIntempBuffer = 0;
+	Logger::Log("Tri to clip is : \n");
+
+	for (VertexIterator it = bufferOut.begin(); it != (bufferOut.begin() + 3); it++)
+	{
+		glm::vec4 pos = ConstVertexReference(it).getFirst();
+		Logger::Log("vert is (%f, %f, %f, %f) \n", pos.x, pos.y, pos.z, pos.w);
+	}
+
 	for (auto equation : equations)
 	{
 		auto resultEnd = tempBuffer.begin();
@@ -332,7 +334,16 @@ void clipTriangle(int begin, int end,
 		{
 			resultEnd = clipTriangleEq(triangle, equation, resultEnd, temp1, temp2);
 		}
-		std::printf("clipping created %d tris \n", (resultEnd.start - tempBuffer.begin().start) / resultEnd.vertexSize);
+		const int vertCount = (resultEnd.start - tempBuffer.begin().start) / resultEnd.vertexSize;
+		if (vertCount > 3)
+		{
+			Logger::Log("vertCount is %d ========== : \n", vertCount);
+			for (VertexIterator it = bufferOut.begin(); it != (bufferOut.begin() + vertCount); it++)
+			{
+				glm::vec4 pos = ConstVertexReference(it).getFirst();
+				Logger::Log("vert is (%f, %f, %f, %f) \n", pos.x, pos.y, pos.z, pos.w);
+			}
+		}
 		assert((resultEnd.start - tempBuffer.begin().start) / resultEnd.vertexSize <= 12);
 		bufferOut.overwrite(bufferOut.begin() + begin, tempBuffer.begin(), resultEnd);
 		end = bufferOut.getVertexCount();
@@ -369,14 +380,21 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 	InPlaceVertex inPlaceVertex2(vsOut);
 	auto recycledbegin = recycledVertexBuffer->begin();
 
+	size_t currentVertCountInPostClippingBuffer = 0;
+
+
 	for (int iVert = 0; iVert < recycledVertexBuffer->getVertexCount(); iVert += 3) {
 
 		auto postClippingBegin = postClippingBuffer->begin();
-		postClippingBuffer->overwrite(postClippingBegin + iVert, recycledbegin + iVert, recycledbegin + iVert + 3);
+		postClippingBuffer->overwrite(postClippingBegin + currentVertCountInPostClippingBuffer, recycledbegin + iVert, recycledbegin + iVert + 3);
 
-		clipTriangle(iVert, iVert + 3,
+		clipTriangle(currentVertCountInPostClippingBuffer, currentVertCountInPostClippingBuffer + 3,
 			*postClippingBuffer, tempClippingBuffer, inPlaceVertex1.getVertexReference(), inPlaceVertex2.getVertexReference());
+
+		currentVertCountInPostClippingBuffer = postClippingBuffer->getVertexCount();
 	}
+
+	Logger::Log("pos clip mesh has %d vertices, %d vertices created", postClippingBuffer->getVertexCount(), postClippingBuffer->getVertexCount() - recycledVertexBuffer->getVertexCount());
 
 	for (int iVert = 0; iVert < postClippingBuffer->getVertexCount(); iVert+=3) {
 
@@ -399,6 +417,7 @@ static bool earlyDiscardTriangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 		return true;
 	}
 	if (v1.z < -1. && v2.z < -1. && v3.z < -1.) {
+		assert(false);
 		return true;
 	}
 	

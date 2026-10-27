@@ -142,11 +142,11 @@ struct VertexReference {
 	 	assert(vertexSize % sizeof(float) == 0);
 	 	const float* startV1 = reinterpret_cast<const float*>(v1.start);
 	 	const float* startV2 = reinterpret_cast<const float*>(v2.start);
+		float* startThis = reinterpret_cast<float*>(start);
 	 	//Because all vertex attributes are float, we can interpolate them this way
 	 	//doesn't matter if it is 2 floats or a glmvec2
 	 	for (size_t i = 0 ; i < vertexSize/sizeof(float) ; ++i) {
-	 		reinterpret_cast<float*>(start)[i] = startV1[i] * alpha +
-	 			startV2[i] * (1-alpha);
+			startThis[i] = startV1[i] * alpha + startV2[i] * (1-alpha);
 	 	}
 	}
 

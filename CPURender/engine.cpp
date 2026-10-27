@@ -202,7 +202,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.01f, 100.f);
 	glm::mat4 object(1.);
 
-	object = rotate(object, time * 0.1f, {0.,1.,0.});
+	//object = rotate(object, time * 0.1f, {0.,1.,0.});
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
 	renderAPI.updateBuffer(cb, buffer);
