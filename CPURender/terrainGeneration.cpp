@@ -111,7 +111,7 @@ public:
 
 			float height = heightMap[linearizeCoord(pointCoord, heightPointCount)];
 
-			positions[i] = glm::vec3(pointCoord.x * edgeLength, height, pointCoord.y * edgeLength);
+			positions[i] = glm::vec3(pointCoord.x * edgeLength, 0.f, pointCoord.y * edgeLength);
 		}
 
 

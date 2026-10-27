@@ -104,7 +104,7 @@ void Engine::init(SDL_Window* windowIn) {
 	cb = renderAPI.createConstantBuffer<GlobalConstantBuffer>();
 
 	TerrainGenerationParams genParams;
-	genParams.tileCount = {64,64};
+	genParams.tileCount = {16,16};
 	genParams.terrainSize = {1.f, 1.f};
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
 	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
@@ -115,8 +115,10 @@ void Engine::init(SDL_Window* windowIn) {
 
 void Engine::handleEvent(const SDL_Event &event) {
 	SDL_CaptureMouse(true);
-
-	glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir);
+	float moveSpeed = 0.2f;
+	glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir) * moveSpeed;
+	glm::vec3 dirVector = mainCam.dir * moveSpeed;
+	glm::vec3 upVector = glm::vec3(0., 1., 0.) * moveSpeed;
 	float mouseVel = 0.01f;
 	if (event.type == SDL_EVENT_KEY_DOWN) {
 		if (event.key.key == SDLK_SPACE) {
@@ -124,23 +126,28 @@ void Engine::handleEvent(const SDL_Event &event) {
 			resetFire();
 		}
 
-		float moveSpeed = 0.2f;
 
 		switch (event.key.key) {
 			case SDLK_S:
-				mainCam.pos -= mainCam.dir * moveSpeed;
+				mainCam.pos -= dirVector;
 				break;
 			case SDLK_Z:
-				mainCam.pos += mainCam.dir * moveSpeed;
+				mainCam.pos += dirVector;
 				break;
 			case SDLK_Q:
-				mainCam.pos += leftVector * moveSpeed;
+				mainCam.pos += leftVector;
 				break;
 			case SDLK_D:
-				mainCam.pos -= leftVector * moveSpeed;
+				mainCam.pos -= leftVector;
 				break;
 			case SDLK_P:
 				Logger::LogThisFrame();
+				break;
+			case SDLK_A:
+				mainCam.pos += upVector;
+				break;
+			case SDLK_E:
+				mainCam.pos -= upVector;
 				break;
 		}
 	}
@@ -199,22 +206,23 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 
 	glm::mat4 view = glm::lookAt(mainCam.pos, mainCam.pos + mainCam.dir, {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.01f, 100.f);
+	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
 	glm::mat4 object(1.);
 
-	//object = rotate(object, time * 0.1f, {0.,1.,0.});
+	object = rotate(object, 3.14f*1.5f, {1.,0.,0.});
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
+	buffer.model = object;
 	renderAPI.updateBuffer(cb, buffer);
 
 	DrawCommand command1;
-	command1.vertexBuffer = quadMesh;
-	command1.vertexShader = vs;
-	command1.pixelShader = ps;
+	//command1.vertexBuffer = quadMesh;
+	//command1.vertexShader = vs;
+	//command1.pixelShader = ps;
 
-	//command1.vertexBuffer = terrainData.mesh;
-	//command1.vertexShader = terrainData.vs;
-	//command1.pixelShader = terrainData.ps;
+	command1.vertexBuffer = terrainData.mesh;
+	command1.vertexShader = terrainData.vs;
+	command1.pixelShader = terrainData.ps;
 
 	command1.PS_resources.textures.push_back(doomHead);
 	command1.VS_Resources.constantBuffers.push_back(cb);

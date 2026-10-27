@@ -46,7 +46,6 @@ bool pointInTriangle (glm::vec2 pt, glm::vec2  v1, glm::vec2  v2, glm::vec2  v3)
 	d3 = det2d(v1 - v3, pt - v3);
 
 	has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-	has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
 
 	return !has_neg;
 }
