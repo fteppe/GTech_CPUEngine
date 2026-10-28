@@ -167,25 +167,6 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 	time += 0.16f;
 	auto start = std::chrono::high_resolution_clock::now();
-	/* Fire update */
-	for (uint32_t x = 0; x < FIRE_W; x++) {
-		for (uint32_t y = 1; y < FIRE_H; y++) {
-			uint32_t src = FIRE_W * y + x;
-			uint32_t rand_idx = rand() % 4;
-			int32_t dst = (int32_t) src - FIRE_W;
-			int32_t dst_x = (int32_t) (src % FIRE_W) - (int32_t) rand_idx + 1;
-			if (dst < 0 || dst_x < 0 || dst_x >= FIRE_W) {
-				continue;
-			} else {
-				dst = dst - (int32_t) (src % FIRE_W) + dst_x;
-				uint8_t src_val = firePixels[src];
-				uint8_t decay = rand_idx & 1;
-				firePixels[dst] = (src_val > decay) ? (src_val - decay) : 0;
-			}
-		}
-	}
-
-
 
 	DrawContext context;
 	context.color = frameBuffer;
@@ -201,9 +182,6 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 		}
 	}
 
-	// glm::vec3 quad[4] = {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.), glm::vec3(0.5,-0.5,0.)};
-	//
-	// renderAPI.updateVertexBuffer<glm::vec3>(quadMesh, {quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]}, 0);
 
 	glm::mat4 view = glm::lookAt(mainCam.pos, mainCam.pos + mainCam.dir, {0.,1.,0.});
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
@@ -229,7 +207,6 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	renderAPI.draw(command1, context);
 
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
-
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = duration_cast<std::chrono::milliseconds>(end - start);

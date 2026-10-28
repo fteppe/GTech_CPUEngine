@@ -71,11 +71,11 @@ public:
 		for (int i = 0 ; i < heightMap.size(); i++) {
 			glm::ivec2 coord = getCoord(i, heightPointCount);
 
-			glm::vec2 pos = {coord.x, coord.y};
+			glm::vec2 pos = {float(coord.x) / float(params.tileCount.x), coord.y / float(params.tileCount.y)};
 
-			float height = glm::perlin(pos);
+			float height = glm::perlin(pos * 5.f);
 
-			heightMap[i] = std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
+			heightMap[i] = height * 0.02f;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
 		}
 
 		angleToUpXY.resize(heightMap.size());

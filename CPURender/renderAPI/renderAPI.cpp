@@ -390,7 +390,7 @@ void RenderAPI::draw(const renderResource::ResolvedDrawCommand &drawCommand, ren
 		currentVertCountInPostClippingBuffer = clipTriangle(currentVertCountInPostClippingBuffer, currentVertCountInPostClippingBuffer + 3,
 			*postClippingBuffer, tempClippingBuffer, inPlaceVertex1.getVertexReference(), inPlaceVertex2.getVertexReference());
 	}
-
+	postClippingBuffer->shrink(currentVertCountInPostClippingBuffer);
 	Logger::Log("pos clip mesh has %d vertices, %d vertices created", postClippingBuffer->getVertexCount(), postClippingBuffer->getVertexCount() - recycledVertexBuffer->getVertexCount());
 
 	for (int iVert = 0; iVert < postClippingBuffer->getVertexCount(); iVert+=3) {
