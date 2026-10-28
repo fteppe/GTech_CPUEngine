@@ -75,7 +75,7 @@ public:
 
 			float height = glm::perlin(pos * 5.f);
 
-			heightMap[i] = height * 0.02f;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
+			heightMap[i] = height * 0.1f;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
 		}
 
 		angleToUpXY.resize(heightMap.size());

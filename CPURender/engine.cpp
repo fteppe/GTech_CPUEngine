@@ -114,7 +114,7 @@ void Engine::init(SDL_Window* windowIn) {
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
-	SDL_CaptureMouse(true);
+	SDL_SetWindowRelativeMouseMode(window, wantMouseCapture);
 	float moveSpeed = 0.2f;
 	glm::vec3 leftVector = glm::cross(glm::vec3(0., 1., 0.), mainCam.dir) * moveSpeed;
 	glm::vec3 dirVector = mainCam.dir * moveSpeed;
@@ -125,8 +125,6 @@ void Engine::handleEvent(const SDL_Event &event) {
 			//We reset the fire on space bar down
 			resetFire();
 		}
-
-
 		switch (event.key.key) {
 			case SDLK_S:
 				mainCam.pos -= dirVector;
@@ -149,6 +147,8 @@ void Engine::handleEvent(const SDL_Event &event) {
 			case SDLK_E:
 				mainCam.pos -= upVector;
 				break;
+			case SDLK_C:
+				wantMouseCapture = !wantMouseCapture;
 		}
 	}
 	if (event.type == SDL_EVENT_MOUSE_MOTION) {
@@ -159,7 +159,9 @@ void Engine::handleEvent(const SDL_Event &event) {
 		glm::mat4 rotation(1.); 
 		rotation = glm::rotate(rotation, -event.motion.xrel * mouseVel, { 0.,1.,0. });
 		rotation = glm::rotate(rotation, -event.motion.yrel * mouseVel, leftVector);
-		mainCam.dir = rotation * glm::vec4(mainCam.dir, 1.f);
+		if (wantMouseCapture) {
+			mainCam.dir = rotation * glm::vec4(mainCam.dir, 1.f);
+		}
 	}
 }
 
