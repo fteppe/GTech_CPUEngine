@@ -53,7 +53,7 @@ class TerrainGenerator {
 
 	float getAngleOnAxisForPoint(float angleBefore, float angleAfter, int posInEdge) {
 		float angleDelta = abs(angleAfter - angleBefore);
-		if (angleDelta > 3.14f /4.f) {
+		if (angleDelta > 3.14f /4.f && false) {
 			return posInEdge ? angleAfter : angleBefore;
 		}
 		return (angleBefore + angleAfter) / 2.f;
@@ -75,7 +75,7 @@ public:
 
 			float height = glm::perlin(pos);
 
-			heightMap[i] = std::cos(pos.x) * 0.2f;
+			heightMap[i] = std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
 		}
 
 		angleToUpXY.resize(heightMap.size());
@@ -129,6 +129,7 @@ public:
 			glm::vec2 normalXY(std::sin(xAngle), std::sin(yAngle));
 			//x²+y²+z² = 1 => z² = 1 - x² - y ² => z = sqrt(1 - x² - y ²)
 			glm::vec3 vertexNormal = glm::vec3(normalXY.x, std::sqrt(1 - glm::dot(normalXY, normalXY)), normalXY.y);
+			//vertexNormal = glm::vec3(0.,1,0.);
 			normals[i] = vertexNormal;
 		}
 

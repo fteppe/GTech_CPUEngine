@@ -17,7 +17,11 @@ Color TerrainPixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexRefere
 
 	normal = glm::normalize(normal);
 	glm::vec3 lightDir = glm::normalize(glm::vec3(-1., -1., -1.));
-	float lightIntensity = 0.2f + std::max(0.f, glm::dot(lightDir, -normal));
+	float lightIntensity = 0.1f + std::max(0.f, glm::dot(lightDir, -normal));
+	lightIntensity = glm::clamp(lightIntensity, 0.f, 1.f);
+	Color lightColor = Color::fromUNorm(lightIntensity, lightIntensity, lightIntensity);
 	//return colors::BLUE;
-	return Color::fromUNorm(lightIntensity, lightIntensity, lightIntensity);
+	glm::vec3 normalColor = normal * 0.5f + 0.5f;
+	Color colorNormal = Color::fromUNorm(normalColor.x, normalColor.y, normalColor.z);
+	return lightColor;
 }

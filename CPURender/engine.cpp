@@ -104,7 +104,7 @@ void Engine::init(SDL_Window* windowIn) {
 	cb = renderAPI.createConstantBuffer<GlobalConstantBuffer>();
 
 	TerrainGenerationParams genParams;
-	genParams.tileCount = {16,16};
+	genParams.tileCount = {32,32};
 	genParams.terrainSize = {1.f, 1.f};
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
 	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
