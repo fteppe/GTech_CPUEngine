@@ -15,8 +15,9 @@ void TerrainShaderVertex::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn
 Color TerrainPixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const {
 	auto [clipPos, worldPos, normal] = interpolatedVertex.getVertexAttributes<PS_Inputs>();
 
-
-	glm::vec3 lightDir = glm::normalize(glm::vec3(-1., 0., -1.));
-	float lightIntensity = 0.2f + std::min(0.f, glm::dot(lightDir, normal));
-	return colors::BLUE;// Color(lightIntensity, lightIntensity, lightIntensity);
+	normal = glm::normalize(normal);
+	glm::vec3 lightDir = glm::normalize(glm::vec3(-1., -1., -1.));
+	float lightIntensity = 0.2f + std::max(0.f, glm::dot(lightDir, -normal));
+	//return colors::BLUE;
+	return Color::fromUNorm(lightIntensity, lightIntensity, lightIntensity);
 }

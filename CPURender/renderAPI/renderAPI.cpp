@@ -461,7 +461,7 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 	minBox = glm::clamp(minBox, glm::vec3(-1.), glm::vec3(1.));
 	maxBox = glm::clamp(maxBox, glm::vec3(-1.), glm::vec3(1.));
 
-	glm::ivec2 screenDims(WIDTH, HEIGHT);
+	glm::ivec2 screenDims(WIDTH - 1, HEIGHT - 1);
 
 	glm::ivec3 iMinBox = setToScreenSpace(minBox, screenDims);
 	glm::ivec3 iMaxBox = setToScreenSpace(maxBox, screenDims);

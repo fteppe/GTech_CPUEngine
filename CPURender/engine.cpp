@@ -209,7 +209,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
 	glm::mat4 object(1.);
 
-	object = rotate(object, 3.14f*1.5f, {1.,0.,0.});
+	object = rotate(object, 3.14f*.0f, {1.,0.,0.});
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
 	buffer.model = object;

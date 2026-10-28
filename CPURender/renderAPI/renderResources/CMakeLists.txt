@@ -1,1 +1,1 @@
-target_sources(CPURender PRIVATE texture.cpp)
+target_sources(CPURender PRIVATE texture.cpp vertexBuffer.cpp)

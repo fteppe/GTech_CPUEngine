@@ -75,7 +75,7 @@ public:
 
 			float height = glm::perlin(pos);
 
-			heightMap[i] = height;
+			heightMap[i] = std::cos(pos.x) * 0.2f;
 		}
 
 		angleToUpXY.resize(heightMap.size());
@@ -111,7 +111,7 @@ public:
 
 			float height = heightMap[linearizeCoord(pointCoord, heightPointCount)];
 
-			positions[i] = glm::vec3(pointCoord.x * edgeLength, 0.f, pointCoord.y * edgeLength);
+			positions[i] = glm::vec3(pointCoord.x * edgeLength, height, params.terrainSize.y - pointCoord.y * edgeLength);
 		}
 
 
@@ -126,7 +126,7 @@ public:
 
 			float xAngle = getAngleOnAxisForPoint(angles.xBefore, angles.xAfter, coordInQuad.x);
 			float yAngle = getAngleOnAxisForPoint(angles.yBefore, angles.yAfter, coordInQuad.y);
-			glm::vec2 normalXY(std::cos(xAngle), std::cos(yAngle));
+			glm::vec2 normalXY(std::sin(xAngle), std::sin(yAngle));
 			//x²+y²+z² = 1 => z² = 1 - x² - y ² => z = sqrt(1 - x² - y ²)
 			glm::vec3 vertexNormal = glm::vec3(normalXY.x, std::sqrt(1 - glm::dot(normalXY, normalXY)), normalXY.y);
 			normals[i] = vertexNormal;
