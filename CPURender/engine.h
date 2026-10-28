@@ -29,6 +29,8 @@ protected:
 	struct Camera {
 		glm::vec3 pos = glm::vec3(0.f, 0.f, -5.f);
 		glm::vec3 dir = glm::vec3(0.f, 0.f, 1.f);
+		float pitch = 0.f;
+		float yaw = 0.f;
 	};
 
 	Camera mainCam;
@@ -52,11 +54,6 @@ protected:
 
 	TerrainData terrainData;
 
-	struct Viewpoint {
-		glm::vec3 worldPos = glm::vec3(0.,0.,-1.);
-		glm::vec3 eyeDir = glm::vec3(0.,0.,1.);
-	};
-	Viewpoint mainViewpoint;
 	SDL_Window* window = nullptr;
 	bool wantMouseCapture = true;
 };
