@@ -194,7 +194,7 @@ void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrame
 	// auto texture = this->textures[colorHandle].get();
 	for (int i = 0; i < WIDTH; i ++) {
 		for (int j = 0; j < HEIGHT; j ++) {
-			frameBuffer.put_pixel(i,j, texture->getData({i , j ,0}));
+			frameBuffer.put_pixel(i,j, texture->getData({i , HEIGHT - j - 1,0}));
 		}
 	}
 }

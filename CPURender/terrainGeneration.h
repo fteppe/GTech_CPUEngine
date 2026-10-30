@@ -2,7 +2,7 @@
 #include "renderAPI/renderAPI.h"
 
 struct TerrainGenerationParams {
-	glm::vec2 terrainSize;
+	glm::vec3 terrainSize;
 	glm::ivec2 tileCount;
 };
 

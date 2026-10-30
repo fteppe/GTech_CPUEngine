@@ -111,7 +111,7 @@ void Engine::init(SDL_Window* windowIn) {
 
 	TerrainGenerationParams genParams;
 	genParams.tileCount = {64,64};
-	genParams.terrainSize = {1.f, 1.f};
+	genParams.terrainSize = {1.f, 0.1f, 1.f};
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
 	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
 	terrainData.ps = renderAPI.createPixelShader<TerrainPixelShader>();
@@ -164,7 +164,7 @@ void Engine::handleEvent(const SDL_Event &event) {
 			SDL_GetWindowSize(window, &windowX, &windowY);
 			glm::mat4 rotation(1.);
 			mainCam.yaw += -event.motion.xrel * mouseVel;
-			mainCam.pitch += -event.motion.yrel * mouseVel;
+			mainCam.pitch += event.motion.yrel * mouseVel;
 			rotation = glm::rotate(rotation, mainCam.yaw, { 0.,1.,0. });
 			mainCam.pitch = glm::clamp(mainCam.pitch,  -1.5f, 1.5f);
 			rotation = glm::rotate(rotation, mainCam.pitch, glm::vec3(1.0,0.,0.));
@@ -197,13 +197,12 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
 	glm::mat4 object(1.);
 
-	object = rotate(object, 3.14f*.0f, {1.,0.,0.});
 	object = glm::scale(object, glm::vec3(10.,10.,10.));
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
 	buffer.model = object;
 	renderAPI.updateBuffer(cb, buffer);
-
+	printf("height = %f \n", mainCam.pos.y);
 	DrawCommand command1;
 	//command1.vertexBuffer = quadMesh;
 	//command1.vertexShader = vs;

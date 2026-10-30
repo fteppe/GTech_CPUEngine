@@ -43,7 +43,7 @@ class TerrainGenerator {
 
 	glm::vec3 getPosFromCoord(glm::ivec2 coord) {
 		float height = heightMap[linearizeCoord(coord, heightPointCount)];
-		return glm::vec3(coord.x * edgeLength, height, params.terrainSize.y - coord.y * edgeLength);
+		return glm::vec3(coord.x * edgeLength, height, coord.y * edgeLength);
 	}
 
 
@@ -61,10 +61,10 @@ public:
 
 			glm::vec2 pos = {float(coord.x) / float(params.tileCount.x), coord.y / float(params.tileCount.y)};
 
-			float height = glm::perlin(pos * 5.f) * 0.1f;
-			height += glm::perlin((pos + 12.f) * 2.f) * 0.07f;
-			height += glm::perlin(pos * 30.f) * 0.01f;
-
+			float height = glm::perlin(pos * 5.f);
+			height += glm::perlin((pos + 12.f) * 2.f) * 0.7f;
+			height += glm::perlin(pos * 30.f) * 0.1f;
+			height = (height + 1 * 0.5f) * params.terrainSize.y;
 			heightMap[i] = height ;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
 		}
 
@@ -98,7 +98,7 @@ public:
 				glm::vec3 v2 = getPosFromCoord(quadCoord + quadVerts[iTri * 3 + 1]);
 				glm::vec3 v3 = getPosFromCoord(quadCoord + quadVerts[iTri * 3 + 2]);
 
-				normalFace += glm::normalize(glm::cross(v2 - v1, v2 - v3));
+				normalFace += glm::normalize(glm::cross(v2 - v1, v3 - v2));
 			}
 
 			normalFace *=0.5f;
@@ -127,12 +127,31 @@ public:
 			normals[i] = vertexNormal;// normalsFaces[linearizeCoord(quadCoord, params.tileCount)];
 		}
 
-		const std::vector<renderResource::VertexAttribute> attributes = {renderResource::VertexAttribute::Vec3, renderResource::VertexAttribute::Vec3};
+		const std::vector<renderResource::VertexAttribute> attributes = {renderResource::VertexAttribute::Vec3, renderResource::VertexAttribute::Vec3, renderResource::VertexAttribute::Vec3};
 
 		auto handle = renderAPI.createVertexBuffer(positions.size(), attributes);
 		renderAPI.updateVertexBuffer(handle, positions, 0);
 		renderAPI.updateVertexBuffer(handle, normals, 1);
+		std::vector<glm::vec3> materialWeights; materialWeights.resize(positions.size());
 
+		for (int i = 0 ; i < materialWeights.size(); i++) {
+			glm::vec3 pos = positions[i];
+			glm::vec3 weight(0.f);
+			if (pos.y > 0.9 * params.terrainSize.y) {
+				weight = glm::vec3(0.f);//All 0 is snow
+			}
+			else if (pos.y > 0.5 * params.terrainSize.y) {
+				weight = {0.,1.,0.}; //Stone
+			}
+			else if (pos.y > 0.1 * params.terrainSize.y) {
+				weight = {1.,0.,0.}; //grass
+			}
+			else {
+				weight = {0.,0.,1.}; //sand
+			}
+			materialWeights[i] = weight;
+		}
+		renderAPI.updateVertexBuffer(handle, materialWeights, 2);
 		return handle;
 	}
 
