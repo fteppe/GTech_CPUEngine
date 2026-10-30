@@ -38,6 +38,7 @@ protected:
 	float time = 0.f;
 	RenderAPI renderAPI;
 	ResourceHandle<renderResource::Texture> doomHead;
+	TextureHandle terrainTex;
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
 	ResourceHandle<renderResource::Texture> frameBuffer;
 	ResourceHandle<renderResource::Texture> depthBuffer;

@@ -57,29 +57,35 @@ void resetFire() {
 	}
 }
 
-void Engine::init(SDL_Window* windowIn) {
-	printf("Init engine \n");
-	time = 0.f;
-	window = windowIn;
-	PixelData doomFace;
+static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
+	PixelData pixelData;
 	int nbrChannel;
-	unsigned char *data = stbi_load("Assets/doomguy.png", &doomFace.width, &doomFace.height, &nbrChannel, 4);
-	doomFace.imageData.resize(doomFace.width * doomFace.height);
+	unsigned char *data = stbi_load(filePath, &pixelData.width, &pixelData.height, &nbrChannel, 4);
+	pixelData.imageData.resize(pixelData.width * pixelData.height);
 
 	//We copy the texture data in a format we can use
-	for (int i = 0; i < doomFace.width; ++i) {
-		for (int j = 0; j < doomFace.height; ++j) {
+	for (int i = 0; i < pixelData.width; ++i) {
+		for (int j = 0; j < pixelData.height; ++j) {
 			Color colorValue;
-			int linearized2D = i + j * doomFace.width;
+			int linearized2D = i + j * pixelData.width;
 			colorValue.r = data[0 + linearized2D * nbrChannel];
 			//First channel is Red, highest weight bits
 			colorValue.g = data[1 + linearized2D * nbrChannel]; //Then green
 			colorValue.b =data[2 + linearized2D * nbrChannel];
-			doomFace.imageData[linearized2D] = colorValue;
+			pixelData.imageData[linearized2D] = colorValue;
 		}
 	}
+	free(data);
+	return renderAPI.createTexture(glm::ivec2(pixelData.width, pixelData.height), pixelData.imageData);
+}
 
-	doomHead = renderAPI.createTexture(glm::ivec2(doomFace.width, doomFace.height), doomFace.imageData);
+void Engine::init(SDL_Window* windowIn) {
+	printf("Init engine \n");
+	time = 0.f;
+	window = windowIn;
+
+	doomHead = loadTexture("Assets/doomguy.png", renderAPI);
+	terrainTex = loadTexture("Assets/terrain.png", renderAPI);
 	quadMesh = renderAPI.createVertexBuffer(
 //positions
 {glm::vec3(-0.5, -0.5,0.), glm::vec3(-0.5, 0.5, 0.), glm::vec3(0.5,0.5,0.),
@@ -109,7 +115,6 @@ void Engine::init(SDL_Window* windowIn) {
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
 	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
 	terrainData.ps = renderAPI.createPixelShader<TerrainPixelShader>();
-	free(data);
 	resetFire();
 }
 
@@ -208,7 +213,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	command1.vertexShader = terrainData.vs;
 	command1.pixelShader = terrainData.ps;
 
-	command1.PS_resources.bindTexture(doomHead, 0);
+	command1.PS_resources.bindTexture(terrainTex, 0);
 	command1.VS_Resources.bindBuffer(cb,0);
 	renderAPI.draw(command1, context);
 

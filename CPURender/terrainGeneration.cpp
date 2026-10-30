@@ -24,44 +24,14 @@ static glm::ivec2 getCoordInQuad(int index) {
 	return quadVerts[index%6];
 }
 
-struct AnglesToUp {
-	float xBefore = 0.f;
-	float xAfter = 0.f;
-	float yBefore = 0.f;
-	float yAfter = 0.f;
-};
-
 
 class TerrainGenerator {
 
 	std::vector<float> heightMap;
-	std::vector<glm::vec2> angleToUpXY;
 	std::vector<glm::vec3> normalsFaces;
 	glm::ivec2 heightPointCount;
 	const TerrainGenerationParams& params;
 	const float edgeLength;
-
-	AnglesToUp getAngleNeighbours(glm::ivec2 coord) {
-		AnglesToUp angles;
-		glm::vec2 anglesNext = angleToUpXY[linearizeCoord(coord, heightPointCount)];
-		angles.xAfter = anglesNext.x;
-		angles.xAfter = anglesNext.y;
-		if (coord.x > 0) {
-			angles.xBefore = angleToUpXY[linearizeCoord({coord.x - 1, coord.y}, heightPointCount)].x;
-		}
-		if (coord.y > 0) {
-			angles.yBefore = angleToUpXY[linearizeCoord({coord.x, coord.y - 1}, heightPointCount)].y;
-		}
-		return angles;
-	}
-
-	float getAngleOnAxisForPoint(float angleBefore, float angleAfter, int posInEdge) {
-		// float angleDelta = abs(angleAfter - angleBefore);
-		// if (angleDelta > 3.14f /4.f) {
-		// 	return posInEdge ? angleAfter : angleBefore;
-		// }
-		return (angleBefore + angleAfter) / 2.f;
-	}
 
 	void addToNormalIfFound(glm::ivec2 coord, glm::vec3& normalInOut, int& normalsCount) {
 		if (coord.x >= 0 && coord.y >= 0 && coord.x < params.tileCount.x && coord.y < params.tileCount.y)
@@ -97,27 +67,6 @@ public:
 
 			heightMap[i] = height ;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
 		}
-		angleToUpXY.resize(heightMap.size());
-
-		for (int i = 0 ; i < angleToUpXY.size(); i++) {
-			glm::ivec2 coord = getCoord(i, heightPointCount);
-			float currentHeight = heightMap[linearizeCoord(coord, heightPointCount)];
-			float nextHeight_X = currentHeight;
-			if (coord.x < heightPointCount.x - 1) {
-				nextHeight_X = heightMap[linearizeCoord({coord.x + 1, coord.y}, heightPointCount)];
-			}
-			float nextHeight_Y = currentHeight;
-			if (coord.y < heightPointCount.y - 1) {
-				nextHeight_Y = heightMap[linearizeCoord({coord.x, coord.y + 1}, heightPointCount)];
-			}
-			glm::vec2 dz_xy = glm::vec2(nextHeight_X - currentHeight, nextHeight_Y - currentHeight);
-
-			float angleToUpX = glm::atan(dz_xy.x /  edgeLength);
-			float angleToUpY = -glm::atan(dz_xy.y /  edgeLength);
-			angleToUpXY[i] = glm::vec2(angleToUpX, angleToUpY);
-		}
-
-
 
 		std::vector<glm::vec3> positions; positions.resize(params.tileCount.x * params.tileCount.y * 6);
 		std::vector<glm::vec3> normals; normals.resize(positions.size());
