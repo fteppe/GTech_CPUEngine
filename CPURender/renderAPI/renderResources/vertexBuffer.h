@@ -27,7 +27,7 @@ namespace renderResource {
 		size_t getVertexCount() const {return vertexCount;}
 		const std::vector<VertexAttribute>& getAttributes() const {return attributes;}
 
-		void shrink(size_t vertexCountIn) {assert(vertexCount > vertexCountIn); vertexCount = vertexCountIn; data.resize(vertexCountIn * fullVertexSize);}
+		void shrink(size_t vertexCountIn) {assert(vertexCount >= vertexCountIn); vertexCount = vertexCountIn; data.resize(vertexCountIn * fullVertexSize);}
 
 		template<typename TVertexData>
 		void updateAttribute(const std::vector<TVertexData>& dataIn, size_t attributeIndex) {

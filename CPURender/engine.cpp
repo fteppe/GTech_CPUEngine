@@ -104,7 +104,7 @@ void Engine::init(SDL_Window* windowIn) {
 	cb = renderAPI.createConstantBuffer<GlobalConstantBuffer>();
 
 	TerrainGenerationParams genParams;
-	genParams.tileCount = {32,32};
+	genParams.tileCount = {64,64};
 	genParams.terrainSize = {1.f, 1.f};
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
 	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
@@ -193,6 +193,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 object(1.);
 
 	object = rotate(object, 3.14f*.0f, {1.,0.,0.});
+	object = glm::scale(object, glm::vec3(10.,10.,10.));
 	GlobalConstantBuffer buffer;
 	buffer.MVP = projection * view * object;
 	buffer.model = object;
@@ -207,8 +208,8 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	command1.vertexShader = terrainData.vs;
 	command1.pixelShader = terrainData.ps;
 
-	command1.PS_resources.textures.push_back(doomHead);
-	command1.VS_Resources.constantBuffers.push_back(cb);
+	command1.PS_resources.bindTexture(doomHead, 0);
+	command1.VS_Resources.bindBuffer(cb,0);
 	renderAPI.draw(command1, context);
 
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);

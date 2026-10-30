@@ -37,7 +37,7 @@ protected:
 
 	float time = 0.f;
 	RenderAPI renderAPI;
-	ResourceHandle<renderResource::ColorTexture> doomHead;
+	ResourceHandle<renderResource::Texture> doomHead;
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
 	ResourceHandle<renderResource::Texture> frameBuffer;
 	ResourceHandle<renderResource::Texture> depthBuffer;

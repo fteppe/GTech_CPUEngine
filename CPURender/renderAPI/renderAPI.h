@@ -44,10 +44,10 @@ class RenderAPI {
 	public:
 	RenderAPI();
 	~RenderAPI();
-	void drawTextureAt(ResourceHandle<renderResource::ColorTexture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer);
+	void drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer);
 	void clearRenderContext(Color defaultColor, Depth defaultDepth, DrawContext& drawContext);
 	void draw(const DrawCommand& drawCommand, DrawContext& drawContext);
-	ResourceHandle<renderResource::ColorTexture> createTexture(glm::ivec2 dims, const std::vector<Color>& textureData);
+	ResourceHandle<renderResource::Texture> createTexture(glm::ivec2 dims, const std::vector<Color>& textureData);
 	TextureHandle createFrameBuffer(glm::ivec2 dims, FrameBufferType type);
 	VertexBufferHandle createVertexBuffer(size_t size, const std::vector<renderResource::VertexAttribute>& attributes);
 	ResourceHandle<renderResource::VertexBuffer> createVertexBuffer(const std::vector<glm::vec3>& positions, const std::vector<glm::vec2>& texCoords);
@@ -98,7 +98,7 @@ protected:
 	void drawTriangle(const renderResource::ResolvedDrawCommand& command, std::array<VertexReference, 3> vertices, renderResource::ResolvedDrawContext& drawContext);
 	void resolveShaderResources(Shader& shaderIn, const CommandBindedResources& bindedResources);
 
-	std::unordered_map<ColorTextureHandle, std::unique_ptr<renderResource::ColorTexture>> textures;
+	std::unordered_map<TextureHandle, std::unique_ptr<renderResource::Texture>> textures;
 	std::unordered_map<VertexBufferHandle, std::unique_ptr<renderResource::VertexBuffer>> vertexBuffers;
 	std::unordered_map<TextureHandle, std::unique_ptr<renderResource::Texture>> frameBuffers;
 	std::unordered_map<VertexShaderHandle, std::unique_ptr<VertexShader>> vertexShaders;

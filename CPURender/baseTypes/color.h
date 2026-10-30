@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <cstdint>
+#include <glm/vec4.hpp>
 
 struct Color {
 public:
@@ -16,9 +17,11 @@ public:
 	constexpr Color() : rgba(0) {}
 	//constexpr  Color(float r, float g, float b, float a = 1.0) : r(r * 255), g(g * 255), b(b * 255), a(a * 255) {}
 	static constexpr Color fromUNorm(float r, float g, float b, float a = 1.0) {return Color(r * 255,g * 255,b * 255,a * 255);}
+	constexpr Color(glm::vec4 in) : Color(Color::fromUNorm(in.r, in.g, in.b, in.a)) {}
 	constexpr Color(uint32_t rgba) : rgba(rgba) {}
 	constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
 	operator uint32_t() const { return rgba; }
+	operator glm::vec4() const { return glm::vec4(r / 255.f, g / 255.f, b / 255.f, a / 255.f); }
 };
 
 

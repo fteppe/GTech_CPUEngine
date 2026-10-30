@@ -17,9 +17,10 @@ static glm::ivec2 getCoord(int index, glm::ivec2 dims) {
 	return {index % dims.x, index / dims.x};
 }
 
+constexpr glm::ivec2 quadVerts[6] = {{0,0}, {0,1}, {1,1},
+									{0,0}, {1,1}, {1,0}};
+
 static glm::ivec2 getCoordInQuad(int index) {
-	constexpr glm::ivec2 quadVerts[6] = {{0,0}, {0,1}, {1,1},
-										{0,0}, {1,1}, {1,0}};
 	return quadVerts[index%6];
 }
 
@@ -35,8 +36,11 @@ class TerrainGenerator {
 
 	std::vector<float> heightMap;
 	std::vector<glm::vec2> angleToUpXY;
+	std::vector<glm::vec3> normalsFaces;
 	glm::ivec2 heightPointCount;
 	const TerrainGenerationParams& params;
+	const float edgeLength;
+
 	AnglesToUp getAngleNeighbours(glm::ivec2 coord) {
 		AnglesToUp angles;
 		glm::vec2 anglesNext = angleToUpXY[linearizeCoord(coord, heightPointCount)];
@@ -52,16 +56,30 @@ class TerrainGenerator {
 	}
 
 	float getAngleOnAxisForPoint(float angleBefore, float angleAfter, int posInEdge) {
-		float angleDelta = abs(angleAfter - angleBefore);
-		if (angleDelta > 3.14f /4.f && false) {
-			return posInEdge ? angleAfter : angleBefore;
-		}
+		// float angleDelta = abs(angleAfter - angleBefore);
+		// if (angleDelta > 3.14f /4.f) {
+		// 	return posInEdge ? angleAfter : angleBefore;
+		// }
 		return (angleBefore + angleAfter) / 2.f;
 	}
 
+	void addToNormalIfFound(glm::ivec2 coord, glm::vec3& normalInOut, int& normalsCount) {
+		if (coord.x >= 0 && coord.y >= 0 && coord.x < params.tileCount.x && coord.y < params.tileCount.y)
+		{
+			normalInOut += normalsFaces[linearizeCoord(coord, params.tileCount)];
+			normalsCount++;
+		}
+	}
+
+	glm::vec3 getPosFromCoord(glm::ivec2 coord) {
+		float height = heightMap[linearizeCoord(coord, heightPointCount)];
+		return glm::vec3(coord.x * edgeLength, height, params.terrainSize.y - coord.y * edgeLength);
+	}
+
+
 public:
 
-	TerrainGenerator(const TerrainGenerationParams&  paramsIn) : params(paramsIn) {}
+	TerrainGenerator(const TerrainGenerationParams&  paramsIn) : params(paramsIn), edgeLength(paramsIn.terrainSize.x / paramsIn.tileCount.x) {}
 
 	VertexBufferHandle generateTerrain(RenderAPI &renderAPI) {
 
@@ -73,13 +91,13 @@ public:
 
 			glm::vec2 pos = {float(coord.x) / float(params.tileCount.x), coord.y / float(params.tileCount.y)};
 
-			float height = glm::perlin(pos * 5.f);
+			float height = glm::perlin(pos * 5.f) * 0.1f;
+			height += glm::perlin((pos + 12.f) * 2.f) * 0.07f;
+			height += glm::perlin(pos * 30.f) * 0.01f;
 
-			heightMap[i] = height * 0.1f;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
+			heightMap[i] = height ;//std::cos(pos.x) * 0.02f + std::cos(pos.y) * 0.03;
 		}
-
 		angleToUpXY.resize(heightMap.size());
-		float edgeLength = params.terrainSize.x / params.tileCount.x;
 
 		for (int i = 0 ; i < angleToUpXY.size(); i++) {
 			glm::ivec2 coord = getCoord(i, heightPointCount);
@@ -95,9 +113,11 @@ public:
 			glm::vec2 dz_xy = glm::vec2(nextHeight_X - currentHeight, nextHeight_Y - currentHeight);
 
 			float angleToUpX = glm::atan(dz_xy.x /  edgeLength);
-			float angleToUpY = glm::atan(dz_xy.y /  edgeLength);
+			float angleToUpY = -glm::atan(dz_xy.y /  edgeLength);
 			angleToUpXY[i] = glm::vec2(angleToUpX, angleToUpY);
 		}
+
+
 
 		std::vector<glm::vec3> positions; positions.resize(params.tileCount.x * params.tileCount.y * 6);
 		std::vector<glm::vec3> normals; normals.resize(positions.size());
@@ -111,7 +131,29 @@ public:
 
 			float height = heightMap[linearizeCoord(pointCoord, heightPointCount)];
 
-			positions[i] = glm::vec3(pointCoord.x * edgeLength, height, params.terrainSize.y - pointCoord.y * edgeLength);
+			positions[i] = getPosFromCoord(pointCoord);
+		}
+
+		normalsFaces.resize(params.tileCount.x * params.tileCount.y);
+		for (int i =0; i < normalsFaces.size(); i++) {
+			glm::ivec2 quadCoord = getCoord(i, params.tileCount);
+
+			glm::vec3 normalFace(0.f);
+
+			for (int iTri = 0; iTri < 2; iTri++) {
+				int index1 = linearizeCoord(quadCoord + quadVerts[iTri * 3], heightPointCount);
+				int index2 = linearizeCoord(quadCoord + quadVerts[iTri * 3 + 1], heightPointCount);
+				int index3 = linearizeCoord(quadCoord + quadVerts[iTri * 3 + 2], heightPointCount);
+
+				glm::vec3 v1 = getPosFromCoord(quadCoord + quadVerts[iTri * 3]);
+				glm::vec3 v2 = getPosFromCoord(quadCoord + quadVerts[iTri * 3 + 1]);
+				glm::vec3 v3 = getPosFromCoord(quadCoord + quadVerts[iTri * 3 + 2]);
+
+				normalFace += glm::normalize(glm::cross(v2 - v1, v2 - v3));
+			}
+
+			normalFace *=0.5f;
+			normalsFaces[i] = normalFace;
 		}
 
 
@@ -122,15 +164,18 @@ public:
 
 			glm::ivec2 pointCoord = quadCoord + coordInQuad;
 
-			AnglesToUp angles = getAngleNeighbours(pointCoord);
-
-			float xAngle = getAngleOnAxisForPoint(angles.xBefore, angles.xAfter, coordInQuad.x);
-			float yAngle = getAngleOnAxisForPoint(angles.yBefore, angles.yAfter, coordInQuad.y);
-			glm::vec2 normalXY(std::sin(xAngle), std::sin(yAngle));
 			//x²+y²+z² = 1 => z² = 1 - x² - y ² => z = sqrt(1 - x² - y ²)
-			glm::vec3 vertexNormal = glm::vec3(normalXY.x, std::sqrt(1 - glm::dot(normalXY, normalXY)), normalXY.y);
-			//vertexNormal = glm::vec3(0.,1,0.);
-			normals[i] = vertexNormal;
+			glm::vec3 vertexNormal(0.f);
+			int normalCount = 0;
+			addToNormalIfFound({pointCoord.x, pointCoord.y}, vertexNormal,normalCount);
+			addToNormalIfFound({pointCoord.x -1, pointCoord.y}, vertexNormal,normalCount);
+			addToNormalIfFound({pointCoord.x, pointCoord.y -1}, vertexNormal,normalCount);
+			addToNormalIfFound({pointCoord.x -1, pointCoord.y -1}, vertexNormal,normalCount);
+
+			vertexNormal = vertexNormal / float(normalCount);
+			vertexNormal = glm::normalize(vertexNormal);
+
+			normals[i] = vertexNormal;// normalsFaces[linearizeCoord(quadCoord, params.tileCount)];
 		}
 
 		const std::vector<renderResource::VertexAttribute> attributes = {renderResource::VertexAttribute::Vec3, renderResource::VertexAttribute::Vec3};

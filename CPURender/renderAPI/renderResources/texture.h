@@ -27,6 +27,8 @@ namespace renderResource {
 
 		virtual ~Texture() {}
 
+		virtual glm::vec4 sample(glm::vec3 uv) const = 0;
+
 		template<typename TPixelType>
 		void fillT(TPixelType defaultVal) {
 			TPixelType* begin = (TPixelType*)&data[0];
@@ -58,22 +60,27 @@ namespace renderResource {
 		}
 	};
 
-	class ColorTexture : public Texture {
-		public:
-		ColorTexture(glm::ivec2 sizeIn, const std::vector<Color>& dataIn) : Texture(sizeIn, dataIn) {}
-		ColorTexture(glm::ivec2 sizeIn) : Texture(sizeIn, Color()) {}
-		Color sample(glm::vec3 uv) const{ return this->sampleT<Color>(uv);}
-		void writeData(glm::ivec3 pos, Color pixelColor) {writeDataT(pos, pixelColor);}
-		Color getData(glm::ivec3 pos) {return getDataT<Color>(pos);}
+
+	template<typename TPixelType>
+	class TextureT : public Texture {
+	public:
+		TextureT(glm::ivec2 sizeIn) : Texture(sizeIn, TPixelType()) {}
+		TextureT(glm::ivec2 sizeIn, const std::vector<TPixelType>& dataIn) : Texture(sizeIn, dataIn) {}
+		void writeData(glm::ivec3 pos, TPixelType data) {writeDataT(pos, data);}
+		TPixelType getData(glm::ivec3 pos) const {return getDataT<TPixelType>(pos);}
+		TPixelType samplePixel(glm::vec3 uv) const {return sampleT<TPixelType>(uv);}
 	};
 
-	class DepthBuffer : public Texture {
-	public:
-		DepthBuffer(glm::ivec2 sizeIn, const std::vector<Depth>& dataIn) : Texture(sizeIn, dataIn) {}
-		DepthBuffer(glm::ivec2 sizeIn) : Texture(sizeIn, Depth()) {}
-		void writeData(glm::ivec3 pos, Depth depth) {writeDataT(pos, depth);}
-		Depth getData(glm::ivec3 pos) {return getDataT<Depth>(pos);}
+	class ColorTexture : public TextureT<Color> {
+		public:
+		using TextureT<Color>::TextureT;
+		glm::vec4 sample(glm::vec3 uv) const override {return samplePixel(uv);}
+	};
 
+	class DepthBuffer : public TextureT<Depth> {
+		using TextureT<Depth>::TextureT;
+
+		glm::vec4 sample(glm::vec3 uv) const override {return glm::vec4(samplePixel(uv).to01(), 0.,0.,0.);}
 	};
 }
 

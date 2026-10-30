@@ -33,12 +33,12 @@ public:
 		return constantBuffers[index]->getData<TConstantBuffer>();
 	}
 	virtual ~Shader(){}
-	const renderResource::ColorTexture& getColorTexture(size_t index) const {
-		return *colorTextures[index];
+	const renderResource::Texture& getTexture(size_t index) const {
+		return *textures[index];
 	}
 
 private:
-	std::vector<renderResource::ColorTexture*>	colorTextures;
+	std::vector<renderResource::Texture*> textures;
 	std::vector<ConstantBuffer*> constantBuffers;
 	friend class RenderAPI;
 };
@@ -56,6 +56,11 @@ public:
 
 	virtual const AttributesList& getInputs() const = 0;
 	virtual Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const = 0;
+};
+
+struct SceneConstantBuffer {
+	glm::vec3 worldCameraPos;
+	glm::mat4 VP;
 };
 
 struct GlobalConstantBuffer {

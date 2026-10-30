@@ -13,7 +13,18 @@ struct Triangle {
 };
 
 struct CommandBindedResources {
-	std::vector<ColorTextureHandle> textures;
+	void bindTexture(TextureHandle handle, size_t index) {
+		if (textures.size() <= index) {textures.resize(index +1);}
+		textures[index] = handle;
+	}
+
+	void bindBuffer(ConstantBufferHandle handle, size_t index) {
+		if (constantBuffers.size() <= index) {constantBuffers.resize(index +1);}
+		constantBuffers[index] = handle;
+	}
+	friend class RenderAPI;
+protected:
+	std::vector<TextureHandle> textures;
 	std::vector<ResourceHandle<ConstantBuffer>> constantBuffers;
 };
 

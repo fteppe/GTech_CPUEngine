@@ -88,7 +88,7 @@ RenderAPI::RenderAPI() {
 RenderAPI::~RenderAPI() {
 }
 
-void RenderAPI::drawTextureAt(ResourceHandle<renderResource::ColorTexture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
+void RenderAPI::drawTextureAt(ResourceHandle<renderResource::Texture> textureHandle, glm::vec2 clipPos, FinalFrameBuffer &frameBuffer) {
 	glm::ivec2 screenDims(WIDTH, HEIGHT);
 
 	glm::ivec3 screenSpaceStart = setToScreenSpace(glm::vec3(clipPos,1.), screenDims);
@@ -99,7 +99,7 @@ void RenderAPI::drawTextureAt(ResourceHandle<renderResource::ColorTexture> textu
 		for (int y = 0; y < texturePtr->size.y; y++) {
 			int posX = x + screenSpaceStart.x;
 			int posY = y + screenSpaceStart.y;
-			frameBuffer.put_pixel(posX, posY, texturePtr->getData(glm::ivec3(x,y,0)));
+			//frameBuffer.put_pixel(posX, posY, texturePtr->getData(glm::ivec3(x,y,0)));
 		}
 	}
 }
@@ -143,10 +143,10 @@ void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
 	draw(resolvedCommand, resolvedDrawContext);
 }
 
-ResourceHandle<renderResource::ColorTexture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
+ResourceHandle<renderResource::Texture> RenderAPI::createTexture(glm::ivec2 dims, const std::vector<Color>& textureData) {
 	assert(dims.x * dims.y == textureData.size());
 	auto texturePtr = std::make_unique<renderResource::ColorTexture>(dims, textureData);
-	auto handle = this->createHandle<renderResource::ColorTexture>();
+	auto handle = this->createHandle<renderResource::Texture>();
 	this->textures.emplace(handle, std::move(texturePtr));
 	return handle;
 }
@@ -509,14 +509,14 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 
 void RenderAPI::resolveShaderResources(Shader& shaderIn, const CommandBindedResources& bindedResources) {
 
-	shaderIn.colorTextures.reserve(bindedResources.textures.size() + 1);
-	shaderIn.colorTextures.clear();
+	shaderIn.textures.reserve(bindedResources.textures.size() + 1);
+	shaderIn.textures.clear();
 	for (auto handle : bindedResources.textures) {
-		renderResource::ColorTexture* tex = nullptr;
+		renderResource::Texture* tex = nullptr;
 		if (handle.isValid()) {
 			tex = this->textures[handle].get();
 		}
-		shaderIn.colorTextures.push_back(tex);
+		shaderIn.textures.push_back(tex);
 	}
 	shaderIn.constantBuffers.reserve(bindedResources.textures.size() + 1);
 	shaderIn.constantBuffers.clear();
