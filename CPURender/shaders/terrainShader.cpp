@@ -23,30 +23,20 @@ void TerrainShaderVertex::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn
 
 static glm::vec4 getTerrainColor(glm::vec3 worldPos, glm::vec4 matWeights, const renderResource::Texture& tex) {
 	glm::vec2 uv = {worldPos.x, worldPos.z};
-	uv = glm::mod(uv, glm::vec2(1.f));
+	uv = glm::mod(uv * 2.f, glm::vec2(1.f));
 
-	glm::vec2 localUV = uv * 0.5f;
+	glm::vec2 localUV = uv * 0.49f;
 
 	glm::vec4 grass = tex.sample(glm::vec3(localUV ,0.));
 	glm::vec4 stone = tex.sample(glm::vec3(localUV + glm::vec2(0.5f,0.f) ,0.));
 	glm::vec4 sand = tex.sample(glm::vec3(localUV + glm::vec2(0.0f,0.5f),0.));
 	glm::vec4 snow = tex.sample(glm::vec3(localUV + glm::vec2(0.5f,0.5f),0.));
 
+	float weightSum = matWeights.x + matWeights.y + matWeights.z + matWeights.w;
+	assert(weightSum > 0.99f && weightSum < 1.01f);
 
-	glm::vec4 finalColor = grass * matWeights.x + stone * matWeights.y + sand * matWeights.z + snow * matWeights.z;
-
-	if (matWeights.x > matWeights.y && matWeights.x > matWeights.z && matWeights.x > matWeights.w) {
-		finalColor = grass;
-	}
-	else if (matWeights.y > matWeights.z && matWeights.y > matWeights.w && matWeights.y > matWeights.x) {
-		finalColor = stone;
-	}
-	else if (matWeights.z > matWeights.x && matWeights.z > matWeights.w && matWeights.z > matWeights.y) {
-		finalColor = sand;
-	}
-	else {
-		finalColor = snow;
-	}
+	glm::vec4 finalColor = grass * matWeights.x + stone * matWeights.y + sand * matWeights.z + snow * matWeights.w;
+	finalColor = glm::clamp(finalColor, 0.f, 1.f);
 
 	return finalColor;
 }

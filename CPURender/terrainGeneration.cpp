@@ -137,13 +137,13 @@ public:
 		for (int i = 0 ; i < materialWeights.size(); i++) {
 			glm::vec3 pos = positions[i];
 			glm::vec3 weight(0.f);
-			if (pos.y > 0.9 * params.terrainSize.y) {
+			if (pos.y > 0.95 * params.terrainSize.y) {
 				weight = glm::vec3(0.f);//All 0 is snow
 			}
 			else if (pos.y > 0.5 * params.terrainSize.y) {
 				weight = {0.,1.,0.}; //Stone
 			}
-			else if (pos.y > 0.1 * params.terrainSize.y) {
+			else if (pos.y > 0.05 * params.terrainSize.y) {
 				weight = {1.,0.,0.}; //grass
 			}
 			else {
