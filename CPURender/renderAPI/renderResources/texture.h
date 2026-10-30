@@ -40,7 +40,8 @@ namespace renderResource {
 		template<typename TPixelType>
 		TPixelType sampleT(glm::vec3 uv) const{
 			uv = glm::clamp(uv, 0.0f, 1.0f);
-			return getDataT<TPixelType>(glm::ivec3(uv.x * (size.x-1) , uv.y * (size.y - 1), uv.z * (size.z-1)));
+			return getDataT<TPixelType>(glm::ivec3 (std::nearbyint(uv.x * (size.x-1)) ,
+				std::nearbyint(uv.y * (size.y - 1)), std::nearbyint(uv.z * (size.z-1))));
 		}
 
 		size_t getLinearizeCoord(glm::ivec3 coord) const {
