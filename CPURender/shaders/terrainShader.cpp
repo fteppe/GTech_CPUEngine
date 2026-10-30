@@ -34,7 +34,7 @@ Color TerrainPixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexRefere
 	glm::vec4 colorTex = getTexture(0).sample(glm::vec3(uv, 0.f));
 	//lightIntensity = std::abs(lightIntensity - worldPos.x);
 	colorTex *= lightIntensity;
-	Color lightColor = Color::fromUNorm(colorTex.x, colorTex.y, colorTex.y);
+	Color lightColor = colorTex;
 	//return colors::BLUE;
 	glm::vec3 normalColor = normal * 0.5f + 0.5f;
 	Color colorNormal = Color::fromUNorm(normal.y, normal.y, normal.y);
