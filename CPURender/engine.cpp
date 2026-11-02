@@ -202,7 +202,6 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	buffer.MVP = projection * view * object;
 	buffer.model = object;
 	renderAPI.updateBuffer(cb, buffer);
-	printf("height = %f \n", mainCam.pos.y);
 	DrawCommand command1;
 	//command1.vertexBuffer = quadMesh;
 	//command1.vertexShader = vs;
