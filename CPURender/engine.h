@@ -13,6 +13,11 @@ namespace renderResource {
 union SDL_Event;
 struct SDL_Window;
 
+struct ShaderProgram {
+	VertexShaderHandle VS;
+	PixelShaderHandle PS;
+};
+
 struct Engine {
 public:
 	Engine() = default;
@@ -45,7 +50,6 @@ protected:
 
 	ResourceHandle<VertexShader> vs;
 	ResourceHandle<PixelShader> ps;
-	ResourceHandle<ConstantBuffer> cb;
 
 	struct TerrainData {
 		ResourceHandle<VertexShader> vs;
@@ -54,6 +58,11 @@ protected:
 	};
 
 	TerrainData terrainData;
+
+	ConstantBufferHandle sceneCB;
+	ConstantBufferHandle objectCB;
+	ShaderProgram blinnPhong;
+	VertexBufferHandle cubeMesh;
 
 	SDL_Window* window = nullptr;
 	bool wantMouseCapture = true;

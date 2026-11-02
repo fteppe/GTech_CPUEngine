@@ -61,25 +61,26 @@ public:
 struct SceneConstantBuffer {
 	glm::vec3 worldCameraPos;
 	glm::mat4 VP;
+	glm::vec3 lightDir;
 };
 
-struct GlobalConstantBuffer {
-	glm::mat4 model;
-	glm::mat4 MVP;
+struct ObjectConstantBuffer {
+	glm::mat4 modelMat;
 };
+
 
 class BaseVertexShader : public VertexShader {
 	public:
 
 
 	DEFINE_VS_INPUT_OUTPUT((glm::vec3, glm::vec2), (glm::vec4, glm::vec2));
-	BIND_CB(global, GlobalConstantBuffer, 0)
+	BIND_CB(scene, SceneConstantBuffer, 0)
+	BIND_CB(object, ObjectConstantBuffer, 1)
 
 	void VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const  override {
 		auto [v1, uv1] = vertexIn.getVertexAttributes<VS_Inputs>();
-		GlobalConstantBuffer buffer = global();
 
-		glm::vec4 v1_4 = buffer.MVP * glm::vec4(v1, 1.);
+		glm::vec4 v1_4 = scene().VP * object().modelMat * glm::vec4(v1, 1.);
 		vertexOut.setVertexAttributes(VS_Outputs(v1_4, uv1));
 	};
 };

@@ -28,6 +28,7 @@ namespace renderResource {
 		virtual ~Texture() {}
 
 		virtual glm::vec4 sample(glm::vec3 uv) const = 0;
+		glm::ivec3 getDims() const {return size;}
 
 		template<typename TPixelType>
 		void fillT(TPixelType defaultVal) {

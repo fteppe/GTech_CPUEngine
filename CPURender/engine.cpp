@@ -19,43 +19,13 @@
 #include "shaders/shader.h"
 #include "shaders/terrainShader.h"
 #include "logger.h"
-
-
-/* Doom fire variables and color palette */
-#define FIRE_W WIDTH
-#define FIRE_H HEIGHT
-
-#define FIRE_PALETTE_SIZE 37
-
-static uint8_t firePixels[FIRE_W * FIRE_H];
-
-static const uint32_t fire_palette[FIRE_PALETTE_SIZE] = {
-	0x070707, 0x1F0707, 0x2F0F07, 0x470F07, 0x571707, 0x671F07, 0x771F07,
-	0x8F2707, 0x9F2F07, 0xAF3F07, 0xBF4707, 0xC74707, 0xDF4F07, 0xDF5707,
-	0xDF5707, 0xD75F07, 0xD75F07, 0xD7670F, 0xCF6F0F, 0xCF770F, 0xCF7F0F,
-	0xCF8717, 0xC78717, 0xC78F17, 0xC7971F, 0xBF9F1F, 0xBF9F1F, 0xBFA727,
-	0xBFA727, 0xBFAF2F, 0xB7AF2F, 0xB7B72F, 0xB7B737, 0xCFCF6F, 0xDFDF9F,
-	0xEFEFC7, 0xFFFFFF
-};
-
+#include "meshGenerator.h"
+#include "shaders/blinnPhongShader.h"
 
 struct PixelData {
 	int width, height;
 	std::vector<Color> imageData;
 };
-
-
-void resetFire() {
-	/* Fire initialization */
-	for (int i = 0; i < FIRE_W * FIRE_H; i++) {
-		firePixels[i] = 0;
-	}
-
-	/* Seed the fire bottom row with maximum intensity (this is the fire source) */
-	for (int i = 0; i < FIRE_W; i++) {
-		firePixels[(FIRE_H - 1) * FIRE_W + i] = FIRE_PALETTE_SIZE - 1;
-	}
-}
 
 static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
 	PixelData pixelData;
@@ -77,6 +47,13 @@ static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
 	}
 	free(data);
 	return renderAPI.createTexture(glm::ivec2(pixelData.width, pixelData.height), pixelData.imageData);
+}
+
+template <typename VS, typename PS>
+ShaderProgram createShaderProgram(RenderAPI& renderAPI) {
+	VertexShaderHandle vs = renderAPI.createVertexShader<VS>();
+	PixelShaderHandle ps = renderAPI.createPixelShader<PS>();
+	return {vs, ps};
 }
 
 void Engine::init(SDL_Window* windowIn) {
@@ -107,7 +84,6 @@ void Engine::init(SDL_Window* windowIn) {
 	depthBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Depth);
 	vs = renderAPI.createVertexShader<BaseVertexShader>();
 	ps = renderAPI.createPixelShader<BasePixelShader>();
-	cb = renderAPI.createConstantBuffer<GlobalConstantBuffer>();
 
 	TerrainGenerationParams genParams;
 	genParams.tileCount = {64,64};
@@ -115,7 +91,11 @@ void Engine::init(SDL_Window* windowIn) {
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
 	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
 	terrainData.ps = renderAPI.createPixelShader<TerrainPixelShader>();
-	resetFire();
+
+	sceneCB = renderAPI.createConstantBuffer<SceneConstantBuffer>();
+	objectCB = renderAPI.createConstantBuffer<ObjectConstantBuffer>();
+	blinnPhong =  createShaderProgram<BlinnPhongVS, BlinnPhongPS>(renderAPI);
+	cubeMesh = MeshGenerator::generateCube(renderAPI);
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
@@ -127,8 +107,6 @@ void Engine::handleEvent(const SDL_Event &event) {
 	float mouseVel = 0.001f;
 	if (event.type == SDL_EVENT_KEY_DOWN) {
 		if (event.key.key == SDLK_SPACE) {
-			//We reset the fire on space bar down
-			resetFire();
 		}
 		switch (event.key.key) {
 			case SDLK_S:
@@ -183,36 +161,37 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	context.depth= depthBuffer;
 	renderAPI.clearRenderContext(Color::fromUNorm(0.2,0.2,0.2), Depth(std::numeric_limits<uint32_t>::max()), context);
 
-	/* Fire render */
-	for (int y = 0; y < FIRE_H; y++) {
-		for (int x = 0; x < FIRE_W; x++) {
-			uint8_t idx = firePixels[y * FIRE_W + x];
-			if (idx != 0)
-				frameBufferOut.put_pixel(x, y, fire_palette[idx]);
-		}
-	}
-
 
 	glm::mat4 view = glm::lookAt(mainCam.pos, mainCam.pos + mainCam.dir, {0.,1.,0.});
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
 	glm::mat4 object(1.);
 
 	object = glm::scale(object, glm::vec3(10.,10.,10.));
-	GlobalConstantBuffer buffer;
-	buffer.MVP = projection * view * object;
-	buffer.model = object;
-	renderAPI.updateBuffer(cb, buffer);
+
+	SceneConstantBuffer scene;
+	float lightRotationPos = time * 0.1f;
+
+	scene.lightDir = glm::normalize(glm::vec3(std::cos(lightRotationPos), -1.f,std::sin(lightRotationPos)));
+	scene.VP = projection * view;
+	scene.worldCameraPos = mainCam.pos;
+	renderAPI.updateBuffer(sceneCB, scene);
+
+	ObjectConstantBuffer objectBuffer;
+	objectBuffer.modelMat = object;
+	renderAPI.updateBuffer(objectCB, objectBuffer);
+
+
 	DrawCommand command1;
-	//command1.vertexBuffer = quadMesh;
-	//command1.vertexShader = vs;
-	//command1.pixelShader = ps;
 
 	command1.vertexBuffer = terrainData.mesh;
 	command1.vertexShader = terrainData.vs;
 	command1.pixelShader = terrainData.ps;
 
 	command1.PS_resources.bindTexture(terrainTex, 0);
-	command1.VS_Resources.bindBuffer(cb,0);
+	command1.VS_Resources.bindBuffer(sceneCB, 0);
+	command1.VS_Resources.bindBuffer(objectCB, 1);
+	command1.PS_resources.bindBuffer(sceneCB, 0);
+
 	renderAPI.draw(command1, context);
 
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
