@@ -12,9 +12,9 @@ void BlinnPhongVS::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, Verte
 	auto [pos, normal, uvs] = vertexIn.getVertexAttributes<VS_Inputs>();
 
 	glm::vec4 clipPos = scene().VP * object().modelMat * glm::vec4(pos, 1.0f);
-
+	pos = object().modelMat * glm::vec4(pos, 1.0f);
+	normal = object().modelMat * glm::vec4(normal, 1.0f);
 	vertexOut.setVertexAttributes(VS_Outputs(clipPos, pos, normal, uvs));
-
 }
 
 Color BlinnPhongPS::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const {

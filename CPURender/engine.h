@@ -1,8 +1,11 @@
 #pragma once
 
 #include "main.h"
+#include "glm/ext/matrix_float4x4.hpp"
 #include "renderAPI/renderAPI.h"
 #include "renderAPI/resourceHandle.h"
+
+class Scene;
 
 namespace renderResource {
 	class DepthBuffer;
@@ -18,10 +21,18 @@ struct ShaderProgram {
 	PixelShaderHandle PS;
 };
 
+struct DirectionalShadowData {
+	TextureHandle depthBuffer;
+	glm::vec3 dir;
+
+	glm::mat4 view;
+	glm::mat4 projection;
+};
+
 struct Engine {
 public:
-	Engine() = default;
-
+	Engine();
+	~Engine();
 	void init(SDL_Window *window);
 
 	void handleEvent(const SDL_Event& event);
@@ -29,6 +40,9 @@ public:
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
 	void destroy();
+
+	void renderShadow();
+
 protected:
 
 	struct Camera {
@@ -42,6 +56,7 @@ protected:
 
 	float time = 0.f;
 	RenderAPI renderAPI;
+	std::unique_ptr<Scene> scene;
 	ResourceHandle<renderResource::Texture> doomHead;
 	TextureHandle terrainTex;
 	ResourceHandle<renderResource::VertexBuffer> quadMesh;
@@ -52,8 +67,7 @@ protected:
 	ResourceHandle<PixelShader> ps;
 
 	struct TerrainData {
-		ResourceHandle<VertexShader> vs;
-		ResourceHandle<PixelShader> ps;
+		ShaderProgram terrainProgram;
 		VertexBufferHandle mesh;
 	};
 
@@ -66,4 +80,6 @@ protected:
 
 	SDL_Window* window = nullptr;
 	bool wantMouseCapture = true;
+
+	DirectionalShadowData dirShadow;
 };

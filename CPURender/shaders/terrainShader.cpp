@@ -6,13 +6,12 @@
 
 void TerrainShaderVertex::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const {
 
-	auto [v1, normal, matWeights] = vertexIn.getVertexAttributes<VS_Inputs>();
+	auto [pos, normal, matWeights] = vertexIn.getVertexAttributes<VS_Inputs>();
 
-	glm::vec3 worldPos = object().modelMat * glm::vec4(v1, 1.f);
-	normal = glm::mat3(object().modelMat) * normal;
-	normal = glm::normalize(normal);
-	glm::vec4 clipPos = scene().VP * object().modelMat * glm::vec4(v1, 1.);
-	vertexOut.setVertexAttributes(VS_Outputs(clipPos, worldPos, normal, matWeights));
+	glm::vec4 clipPos = scene().VP * object().modelMat * glm::vec4(pos, 1.0f);
+	pos = object().modelMat * glm::vec4(pos, 1.0f);
+	normal = object().modelMat * glm::vec4(normal, 1.0f);
+	vertexOut.setVertexAttributes(VS_Outputs(clipPos, pos, normal, matWeights));
 }
 
 

@@ -20,6 +20,7 @@
 #include "shaders/terrainShader.h"
 #include "logger.h"
 #include "meshGenerator.h"
+#include "scene.h"
 #include "shaders/blinnPhongShader.h"
 
 struct PixelData {
@@ -57,8 +58,16 @@ ShaderProgram createShaderProgram(RenderAPI& renderAPI) {
 	return {vs, ps};
 }
 
+Engine::Engine() {
+}
+
+Engine::~Engine() {
+}
+
 void Engine::init(SDL_Window* windowIn) {
 	printf("Init engine \n");
+
+	scene = std::make_unique<Scene>();
 	time = 0.f;
 	window = windowIn;
 
@@ -90,13 +99,26 @@ void Engine::init(SDL_Window* windowIn) {
 	genParams.tileCount = {64,64};
 	genParams.terrainSize = {1.f, 0.1f, 1.f};
 	terrainData.mesh = generateTerrain(renderAPI, genParams);
-	terrainData.vs = renderAPI.createVertexShader<TerrainShaderVertex>();
-	terrainData.ps = renderAPI.createPixelShader<TerrainPixelShader>();
+	terrainData.terrainProgram = createShaderProgram<TerrainShaderVertex, TerrainPixelShader>(renderAPI);
 
 	sceneCB = renderAPI.createConstantBuffer<SceneConstantBuffer>();
 	objectCB = renderAPI.createConstantBuffer<ObjectConstantBuffer>();
 	blinnPhong =  createShaderProgram<BlinnPhongVS, BlinnPhongPS>(renderAPI);
-	cubeMesh = MeshGenerator::generateQuad(renderAPI, {20.,20.f});
+	cubeMesh = MeshGenerator::generateCube(renderAPI);
+
+	Node terrainNode;
+	terrainNode.textures.push_back(terrainTex);
+	terrainNode.modelMatrix = glm::scale(terrainNode.modelMatrix, glm::vec3(20.f));
+	terrainNode.shaderProgram = terrainData.terrainProgram;
+	terrainNode.mesh = terrainData.mesh;
+
+	Node cubeNode;
+	cubeNode.shaderProgram = blinnPhong;
+	cubeNode.mesh = cubeMesh;
+	cubeNode.textures.push_back(doomHead);
+	scene->nodes.push_back(cubeNode);
+	scene->nodes.push_back(terrainNode);
+
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
@@ -177,36 +199,30 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	scene.worldCameraPos = mainCam.pos;
 	renderAPI.updateBuffer(sceneCB, scene);
 
-	ObjectConstantBuffer objectBuffer;
-	objectBuffer.modelMat = object;
-	renderAPI.updateBuffer(objectCB, objectBuffer);
 
 
-	DrawCommand commandTerrain;
+	for (const auto node : this->scene->nodes) {
+		DrawCommand nodeCommand;
+		nodeCommand.vertexShader = node.shaderProgram.VS;
+		nodeCommand.pixelShader = node.shaderProgram.PS;
+		for (int iTex = 0; iTex < node.textures.size(); iTex++) {
+			nodeCommand.PS_resources.bindTexture(node.textures[iTex], iTex);
+		}
+		nodeCommand.vertexBuffer = node.mesh;
+		ObjectConstantBuffer objectBuffer;
+		objectBuffer.modelMat = node.modelMatrix;
+		renderAPI.updateBuffer(objectCB, objectBuffer);
 
-	commandTerrain.vertexBuffer = terrainData.mesh;
-	commandTerrain.vertexShader = terrainData.vs;
-	commandTerrain.pixelShader = terrainData.ps;
+		nodeCommand.VS_Resources.bindBuffer(sceneCB, 0);
+		nodeCommand.VS_Resources.bindBuffer(objectCB, 1);
+		nodeCommand.PS_resources.bindBuffer(sceneCB, 0);
 
-	commandTerrain.PS_resources.bindTexture(terrainTex, 0);
-	commandTerrain.VS_Resources.bindBuffer(sceneCB, 0);
-	commandTerrain.VS_Resources.bindBuffer(objectCB, 1);
-	commandTerrain.PS_resources.bindBuffer(sceneCB, 0);
+		renderAPI.draw(nodeCommand, context);
 
-	renderAPI.draw(commandTerrain, context);
+	}
 
-	DrawCommand commandCube;
-	commandCube.vertexShader = blinnPhong.VS;
-	commandCube.pixelShader = blinnPhong.PS;
-	commandCube.vertexBuffer = cubeMesh;
 
-	commandCube.PS_resources.bindTexture(terrainTex, 0);
-	commandCube.VS_Resources.bindBuffer(sceneCB, 0);
-	commandCube.VS_Resources.bindBuffer(objectCB, 1);
-	commandCube.PS_resources.bindBuffer(sceneCB, 0);
-	//renderAPI.draw(commandCube, context);
-
-	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
+	renderAPI.transferToFinalFrameBuffer(depthBuffer, frameBufferOut);
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = duration_cast<std::chrono::milliseconds>(end - start);
@@ -216,4 +232,17 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 void Engine::destroy() {
 	printf("Killing engine \n");
+}
+
+void Engine::renderShadow() {
+
+	DrawContext context;
+	if (!dirShadow.depthBuffer.isValid()) {
+		dirShadow.depthBuffer = renderAPI.createFrameBuffer({200,200}, FrameBufferType::Depth);
+	}
+
+	context.depth = dirShadow.depthBuffer;
+
+
+
 }

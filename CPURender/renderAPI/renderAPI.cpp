@@ -130,8 +130,12 @@ void RenderAPI::draw(const DrawCommand &drawCommand, DrawContext &drawContext) {
 	resolvedCommand.vertexBuffer = this->vertexBuffers[drawCommand.vertexBuffer].get();
 	renderResource::ResolvedDrawContext resolvedDrawContext;
 	resolvedDrawContext.config = drawContext.config;
-	resolvedDrawContext.color = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[drawContext.color].get());
-	resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.depth].get());
+	if (drawContext.color.isValid()) {
+		resolvedDrawContext.color = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[drawContext.color].get());
+	}
+	if (drawContext.depth.isValid()) {
+		resolvedDrawContext.depth = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[drawContext.depth].get());
+	}
 	auto vs = vertexShaders[drawCommand.vertexShader].get();
 	auto ps = pixelShaders[drawCommand.pixelShader].get();
 	this->resolveShaderResources(*vs, drawCommand.VS_Resources);
@@ -188,15 +192,25 @@ ResourceHandle<renderResource::VertexBuffer> RenderAPI::createVertexBuffer(const
 	return handle;
 }
 
-void RenderAPI::transferToFinalFrameBuffer(TextureHandle colorHandle, FinalFrameBuffer &frameBuffer) {
+void RenderAPI::transferToFinalFrameBuffer(TextureHandle handle, FinalFrameBuffer &frameBuffer) {
 
-	auto texture = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[colorHandle].get());
-	// auto texture = this->textures[colorHandle].get();
-	for (int i = 0; i < WIDTH; i ++) {
-		for (int j = 0; j < HEIGHT; j ++) {
-			frameBuffer.put_pixel(i,j, texture->getData({i , HEIGHT - j - 1,0}));
+	if (auto texture = dynamic_cast<renderResource::ColorTexture*>(this->frameBuffers[handle].get())) {
+		// auto texture = this->textures[colorHandle].get();
+		for (int i = 0; i < WIDTH; i ++) {
+			for (int j = 0; j < HEIGHT; j ++) {
+				frameBuffer.put_pixel(i,j, texture->getData({i , HEIGHT - j - 1,0}));
+			}
 		}
 	}
+	else if (auto texture = dynamic_cast<renderResource::DepthBuffer*>(this->frameBuffers[handle].get())) {
+		for (int i = 0; i < WIDTH; i ++) {
+			for (int j = 0; j < HEIGHT; j ++) {
+				float depth = texture->getData({i , HEIGHT - j - 1,0}).to01();
+				frameBuffer.put_pixel(i,j, Color(glm::vec4(depth)));
+			}
+		}
+	}
+
 }
 
 void clipIntersectEdge(ConstVertexReference v0, ConstVertexReference v1, float value0, float value1, 
@@ -494,14 +508,13 @@ void RenderAPI::drawTriangle(const renderResource::ResolvedDrawCommand &command,
 					Depth newPixelDepth = Depth::from01(depth);
 					if (newPixelDepth < currentDepth)
 					{
-						Color pixelColor = command.pixelShader->PS_MAIN(point, drawContext.interpolatedVertexRef);
-						drawContext.color->writeData({i, j, 0}, pixelColor);
+						if (drawContext.color) {
+							Color pixelColor = command.pixelShader->PS_MAIN(point, drawContext.interpolatedVertexRef);
+							drawContext.color->writeData({i, j, 0}, pixelColor);
+						}
 						drawContext.depth->writeData({i, j, 0}, newPixelDepth);
 					}
 				}
-
-
-
 			}
 		}
 	}
