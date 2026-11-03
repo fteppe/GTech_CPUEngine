@@ -30,7 +30,8 @@ struct PixelData {
 static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
 	PixelData pixelData;
 	int nbrChannel;
-	unsigned char *data = stbi_load(filePath, &pixelData.width, &pixelData.height, &nbrChannel, 4);
+	constexpr int desiredChannels = 4;
+	unsigned char *data = stbi_load(filePath, &pixelData.width, &pixelData.height, &nbrChannel, desiredChannels);
 	pixelData.imageData.resize(pixelData.width * pixelData.height);
 
 	//We copy the texture data in a format we can use
@@ -38,10 +39,10 @@ static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
 		for (int j = 0; j < pixelData.height; ++j) {
 			Color colorValue;
 			int linearized2D = i + j * pixelData.width;
-			colorValue.r = data[0 + linearized2D * nbrChannel];
+			colorValue.r = data[0 + linearized2D * desiredChannels];
 			//First channel is Red, highest weight bits
-			colorValue.g = data[1 + linearized2D * nbrChannel]; //Then green
-			colorValue.b =data[2 + linearized2D * nbrChannel];
+			colorValue.g = data[1 + linearized2D * desiredChannels]; //Then green
+			colorValue.b = data[2 + linearized2D * desiredChannels];
 			pixelData.imageData[linearized2D] = colorValue;
 		}
 	}
@@ -95,7 +96,7 @@ void Engine::init(SDL_Window* windowIn) {
 	sceneCB = renderAPI.createConstantBuffer<SceneConstantBuffer>();
 	objectCB = renderAPI.createConstantBuffer<ObjectConstantBuffer>();
 	blinnPhong =  createShaderProgram<BlinnPhongVS, BlinnPhongPS>(renderAPI);
-	cubeMesh = MeshGenerator::generateCube(renderAPI);
+	cubeMesh = MeshGenerator::generateQuad(renderAPI, {20.,20.f});
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
@@ -166,7 +167,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
 	glm::mat4 object(1.);
 
-	object = glm::scale(object, glm::vec3(10.,10.,10.));
+	//object = glm::scale(object, glm::vec3(10.,10.,10.));
 
 	SceneConstantBuffer scene;
 	float lightRotationPos = time * 0.1f;
@@ -192,7 +193,18 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	command1.VS_Resources.bindBuffer(objectCB, 1);
 	command1.PS_resources.bindBuffer(sceneCB, 0);
 
-	renderAPI.draw(command1, context);
+	//renderAPI.draw(command1, context);
+
+	DrawCommand commandCube;
+	commandCube.vertexShader = blinnPhong.VS;
+	commandCube.pixelShader = blinnPhong.PS;
+	commandCube.vertexBuffer = cubeMesh;
+
+	commandCube.PS_resources.bindTexture(terrainTex, 0);
+	commandCube.VS_Resources.bindBuffer(sceneCB, 0);
+	commandCube.VS_Resources.bindBuffer(objectCB, 1);
+	commandCube.PS_resources.bindBuffer(sceneCB, 0);
+	renderAPI.draw(commandCube, context);
 
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 

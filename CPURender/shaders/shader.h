@@ -90,3 +90,7 @@ class BasePixelShader : public PixelShader {
 	DEFINE_PS_INPUT(glm::vec4, glm::vec2);
 	Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const override;
 };
+
+namespace shaderUtils {
+	glm::vec4 ACES_Tonemapping(glm::vec4 colorIn);
+}

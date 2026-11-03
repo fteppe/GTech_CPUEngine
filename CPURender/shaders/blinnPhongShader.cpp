@@ -3,6 +3,9 @@
 //
 
 #include "blinnPhongShader.h"
+#include "blinnPhongShader.h"
+
+#include "../renderAPI/renderResources/texture.h"
 
 void BlinnPhongVS::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexReference vertexOut) const {
 
@@ -16,7 +19,20 @@ void BlinnPhongVS::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, Verte
 
 Color BlinnPhongPS::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const {
 
-	auto [clipPos, worldPos, normal, uvs] = interpolatedVertex.getVertexAttributes<PS_Inputs>();
+	auto [clipPos, worldPos, normal, uv] = interpolatedVertex.getVertexAttributes<PS_Inputs>();
+	glm::vec3 lightDir = scene().lightDir;
 
-	return colors::GREEN;
+
+	glm::vec3 viewDir = glm::normalize(scene().worldCameraPos - worldPos);
+	glm::vec3 reflectDir = glm::reflect(lightDir, normal);
+
+	float spec = pow(std::max(glm::dot(viewDir, reflectDir), 0.f), 32);
+	float specular = 1.f * spec;
+	float lambert = std::max(0.f,glm::dot(-normal, lightDir));
+	float lightIntensity = lambert + specular + 0.1f;
+
+	glm::vec4 color = getTexture(0).sample(glm::vec3(uv, 0.f)) * lightIntensity;
+
+	Color col = shaderUtils::ACES_Tonemapping(color);
+	return col;
 }
