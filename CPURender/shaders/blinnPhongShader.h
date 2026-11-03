@@ -1,6 +1,11 @@
 #pragma once
 #include "shader.h"
 
+
+namespace shaderUtils {
+	glm::vec3 blinnPhong(glm::vec3 normal, glm::vec3 viewDir, glm::vec3 lightDir, glm::vec3 lightColor, float specularIntensity);
+}
+
 class BlinnPhongVS : public VertexShader {
 
 	DEFINE_VS_INPUT_OUTPUT((glm::vec3, glm::vec3, glm::vec2), (glm::vec4, glm::vec3, glm::vec3, glm::vec2));

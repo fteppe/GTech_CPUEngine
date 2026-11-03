@@ -24,15 +24,22 @@ Color BlinnPhongPS::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference in
 
 
 	glm::vec3 viewDir = glm::normalize(scene().worldCameraPos - worldPos);
-	glm::vec3 reflectDir = glm::reflect(lightDir, normal);
-
-	float spec = pow(std::max(glm::dot(viewDir, reflectDir), 0.f), 32);
-	float specular = 1.f * spec;
+	glm::vec3 specularComp = shaderUtils::blinnPhong(normal, viewDir, scene().lightDir, glm::vec3(1.0), 1.f);
 	float lambert = std::max(0.f,glm::dot(-normal, lightDir));
-	float lightIntensity = lambert + specular + 0.1f;
+	glm::vec3 lightIntensity = lambert + specularComp + 0.1f;
 
-	glm::vec4 color = getTexture(0).sample(glm::vec3(uv, 0.f)) * lightIntensity;
+	glm::vec4 color = getTexture(0).sample(glm::vec3(uv, 0.f)) * glm::vec4(lightIntensity, 1.0f);
 
 	Color col = shaderUtils::ACES_Tonemapping(color);
 	return col;
+}
+
+
+namespace shaderUtils {
+	glm::vec3 blinnPhong(glm::vec3 normal, glm::vec3 viewDir, glm::vec3 lightDir, glm::vec3 lightColor, float specularIntensity) {
+		glm::vec3 reflectDir = glm::reflect(lightDir, normal);
+		float spec = pow(std::max(glm::dot(viewDir, reflectDir), 0.f), 32);
+		float specular = specularIntensity * spec;
+		return specular * lightColor;
+	}
 }

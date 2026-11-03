@@ -1,5 +1,5 @@
 #include "terrainShader.h"
-
+#include "blinnPhongShader.h"
 #include "../renderAPI/renderResources/texture.h"
 
 
@@ -47,20 +47,19 @@ Color TerrainPixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexRefere
 	float matWeightSumInv = 1. / matWeightSum;
 	completeWeight *= matWeightSumInv;
 	glm::vec3 lightDir = scene().lightDir;
-	float lightIntensity = 0.1f + std::max(0.f, glm::dot(lightDir, -normal));
-	lightIntensity = glm::clamp(lightIntensity, 0.f, 1.f);
+	glm::vec3 viewDir = glm::normalize(scene().worldCameraPos - worldPos);
+	glm::vec3 specularComp = shaderUtils::blinnPhong(normal, viewDir, scene().lightDir, glm::vec3(1.0), 1.f);
+
+	glm::vec3 lightIntensity = 0.1f + std::max(0.f, glm::dot(lightDir, -normal)) + specularComp;
+
 
 	glm::vec2 uv = {worldPos.x, worldPos.z};
 	uv = glm::mod(uv, glm::vec2(1.f));
 
 	glm::vec4 colorTex = getTerrainColor(worldPos, completeWeight, getTexture(0));
 	//lightIntensity = std::abs(lightIntensity - worldPos.x);
-	colorTex *= lightIntensity;
-	Color lightColor = colorTex;
-	//return colors::BLUE;
-	glm::vec3 normalColor = normal * 0.5f + 0.5f;
-	Color colorNormal = Color::fromUNorm(normal.y, normal.y, normal.y);
-	//return colorNormal;
+	colorTex *= glm::vec4(lightIntensity, 1.f);
+	Color lightColor = shaderUtils::ACES_Tonemapping(colorTex);
 	return lightColor;
 
 }

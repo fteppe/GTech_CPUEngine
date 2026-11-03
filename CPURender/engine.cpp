@@ -167,7 +167,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
 	glm::mat4 object(1.);
 
-	//object = glm::scale(object, glm::vec3(10.,10.,10.));
+	object = glm::scale(object, glm::vec3(10.,10.,10.));
 
 	SceneConstantBuffer scene;
 	float lightRotationPos = time * 0.1f;
@@ -182,18 +182,18 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	renderAPI.updateBuffer(objectCB, objectBuffer);
 
 
-	DrawCommand command1;
+	DrawCommand commandTerrain;
 
-	command1.vertexBuffer = terrainData.mesh;
-	command1.vertexShader = terrainData.vs;
-	command1.pixelShader = terrainData.ps;
+	commandTerrain.vertexBuffer = terrainData.mesh;
+	commandTerrain.vertexShader = terrainData.vs;
+	commandTerrain.pixelShader = terrainData.ps;
 
-	command1.PS_resources.bindTexture(terrainTex, 0);
-	command1.VS_Resources.bindBuffer(sceneCB, 0);
-	command1.VS_Resources.bindBuffer(objectCB, 1);
-	command1.PS_resources.bindBuffer(sceneCB, 0);
+	commandTerrain.PS_resources.bindTexture(terrainTex, 0);
+	commandTerrain.VS_Resources.bindBuffer(sceneCB, 0);
+	commandTerrain.VS_Resources.bindBuffer(objectCB, 1);
+	commandTerrain.PS_resources.bindBuffer(sceneCB, 0);
 
-	//renderAPI.draw(command1, context);
+	renderAPI.draw(commandTerrain, context);
 
 	DrawCommand commandCube;
 	commandCube.vertexShader = blinnPhong.VS;
@@ -204,7 +204,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	commandCube.VS_Resources.bindBuffer(sceneCB, 0);
 	commandCube.VS_Resources.bindBuffer(objectCB, 1);
 	commandCube.PS_resources.bindBuffer(sceneCB, 0);
-	renderAPI.draw(commandCube, context);
+	//renderAPI.draw(commandCube, context);
 
 	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 
