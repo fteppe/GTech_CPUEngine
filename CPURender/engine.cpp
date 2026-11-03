@@ -118,7 +118,8 @@ void Engine::init(SDL_Window* windowIn) {
 	cubeNode.textures.push_back(doomHead);
 	scene->nodes.push_back(cubeNode);
 	scene->nodes.push_back(terrainNode);
-
+	cubeNode.modelMatrix = translate(cubeNode.modelMatrix, glm::vec3(1.,1.,1.));
+	// scene->nodes.push_back(cubeNode);
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
@@ -222,7 +223,8 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 	}
 
 
-	renderAPI.transferToFinalFrameBuffer(depthBuffer, frameBufferOut);
+	// renderAPI.transferToFinalFrameBuffer(depthBuffer, frameBufferOut);
+	renderAPI.transferToFinalFrameBuffer(frameBuffer, frameBufferOut);
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = duration_cast<std::chrono::milliseconds>(end - start);
