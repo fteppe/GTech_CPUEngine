@@ -13,6 +13,7 @@ renderResource::ColorCubemap::ColorCubemap(glm::ivec2 sizeSlice, const std::vect
 
 glm::vec4 renderResource::ColorCubemap::sample(glm::vec3 uv) const {
 
+	uv.z = -uv.z;
 	for (int iAxis = 0; iAxis < 3; iAxis++) {
 		if (std::abs(uv[iAxis]) >= std::abs(uv[(iAxis+1)%3]) && std::abs(uv[iAxis]) >= std::abs(uv[(iAxis+2)%3])) {
 			int maxAxis = iAxis;
