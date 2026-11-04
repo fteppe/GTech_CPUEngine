@@ -136,8 +136,8 @@ void Engine::init(SDL_Window* windowIn) {
 	cubeNode.textures.push_back(doomHead);
 	scene->nodes.push_back(cubeNode);
 	scene->nodes.push_back(terrainNode);
-	cubeNode.modelMatrix = translate(cubeNode.modelMatrix, glm::vec3(1.,1.,1.));
-	// scene->nodes.push_back(cubeNode);
+	cubeNode.modelMatrix = translate(cubeNode.modelMatrix, glm::vec3(1.,0.,0.));
+	scene->nodes.push_back(cubeNode);
 
 	skybox = loadCubemap(renderAPI, "Assets/top.jpg", "Assets/bottom.jpg",
 		"Assets/left.jpg", "Assets/right.jpg",

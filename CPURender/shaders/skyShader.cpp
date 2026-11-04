@@ -14,6 +14,9 @@ void SkyVS::VS_MAIN(size_t vertexId, ConstVertexReference vertexIn, VertexRefere
 Color SkyPS::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const {
 
 	auto [clip, dir] = interpolatedVertex.getVertexAttributes<PS_Inputs>();
+
+	// dir = dir - scene().worldCameraPos;
+
 	glm::vec3 visibleDir = dir * 0.5f + 0.5f;
 	// return glm::vec4(visibleDir, 1.f);
 

@@ -14,5 +14,7 @@ class SkyPS : public PixelShader {
 public:
 
 	DEFINE_PS_INPUT(glm::vec4, glm::vec3)
+	BIND_CB(scene, SceneConstantBuffer, 0);
+
 	Color PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference interpolatedVertex) const override;
 };
