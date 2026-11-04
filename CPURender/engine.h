@@ -78,6 +78,8 @@ protected:
 	ShaderProgram blinnPhong;
 	VertexBufferHandle cubeMesh;
 
+	TextureHandle skybox;
+
 	SDL_Window* window = nullptr;
 	bool wantMouseCapture = true;
 

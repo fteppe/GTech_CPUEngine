@@ -8,7 +8,7 @@
 #include "renderAPI/renderAPI.h"
 #include "renderAPI/renderResources/vertexAttribute.h"
 
-VertexBufferHandle MeshGenerator::generateCube(RenderAPI &renderAPI) {
+VertexBufferHandle MeshGenerator::generateCube(RenderAPI &renderAPI, bool inverted) {
 	std::vector<glm::vec3> positions;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> texCoords;
@@ -33,9 +33,12 @@ VertexBufferHandle MeshGenerator::generateCube(RenderAPI &renderAPI) {
 		const glm::vec3 facePos[4] = {normal - tan - coTan, normal - tan + coTan, normal + tan + coTan, normal  + tan - coTan};
 
 		for (int iVertex = 0; iVertex < 6; iVertex++) {
-			positions.push_back(facePos[quadIndices[iVertex]]);
+
+			int vertexIndex = inverted ? 5 - iVertex : iVertex;
+
+			positions.push_back(facePos[quadIndices[vertexIndex]]);
 			normals.push_back(normal);
-			texCoords.push_back(uvs[quadIndices[iVertex]]);
+			texCoords.push_back(uvs[quadIndices[vertexIndex]]);
 		}
 	}
 	assert(positions.size() == 6 * 6);

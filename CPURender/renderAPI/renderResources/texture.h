@@ -11,7 +11,7 @@ namespace renderResource {
 	public:
 		glm::ivec3 size;
 		std::vector<uint8_t> data;
-		Texture(glm::ivec2 sizeIn, size_t pixelSize) : size(sizeIn,1) {data.resize(size.x * size.y * size.z * pixelSize);}
+		Texture(glm::ivec2 sizeIn, size_t pixelSize) : Texture(glm::ivec3(sizeIn,1), pixelSize) {};
 
 		Texture(glm::ivec2 sizeIn, const uint8_t* dataIn, size_t pixelCount, size_t sizePixel) : size(sizeIn, 1) {
 			assert(size.x * size.y * size.z == pixelCount);
@@ -38,6 +38,8 @@ namespace renderResource {
 		}
 
 	protected:
+		Texture(glm::ivec3 sizeIn, size_t pixelSize) : size(sizeIn) {data.resize(size.x * size.y * size.z * pixelSize);}
+
 		template<typename TPixelType>
 		TPixelType sampleT(glm::vec3 uv) const{
 			uv = glm::clamp(uv, 0.0f, 1.0f);
@@ -71,12 +73,21 @@ namespace renderResource {
 		void writeData(glm::ivec3 pos, TPixelType data) {writeDataT(pos, data);}
 		TPixelType getData(glm::ivec3 pos) const {return getDataT<TPixelType>(pos);}
 		TPixelType samplePixel(glm::vec3 uv) const {return sampleT<TPixelType>(uv);}
+	protected:
+		TextureT(glm::ivec3 sizeIn) : Texture(sizeIn, sizeof(TPixelType)) {}
 	};
 
 	class ColorTexture : public TextureT<Color> {
 		public:
 		using TextureT<Color>::TextureT;
 		glm::vec4 sample(glm::vec3 uv) const override {return samplePixel(uv);}
+	};
+
+	class ColorCubemap : public ColorTexture {
+	public:
+		ColorCubemap(glm::ivec2 sizeSlice, const std::vector<Color>& concatenatedColorData);
+
+		glm::vec4 sample(glm::vec3 uv) const override;
 	};
 
 	class DepthBuffer : public TextureT<Depth> {

@@ -48,6 +48,8 @@ class RenderAPI {
 	void clearRenderContext(Color defaultColor, Depth defaultDepth, DrawContext& drawContext);
 	void draw(const DrawCommand& drawCommand, DrawContext& drawContext);
 	ResourceHandle<renderResource::Texture> createTexture(glm::ivec2 dims, const std::vector<Color>& textureData);
+	TextureHandle createCubeMap(glm::ivec2 dimSlice, const std::vector<Color>& up, const std::vector<Color>& down,
+		const std::vector<Color>& left, const std::vector<Color>& right, const std::vector<Color>& front, const std::vector<Color>& back);
 	TextureHandle createFrameBuffer(glm::ivec2 dims, FrameBufferType type);
 	VertexBufferHandle createVertexBuffer(size_t size, const std::vector<renderResource::VertexAttribute>& attributes);
 	ResourceHandle<renderResource::VertexBuffer> createVertexBuffer(const std::vector<glm::vec3>& positions, const std::vector<glm::vec2>& texCoords);

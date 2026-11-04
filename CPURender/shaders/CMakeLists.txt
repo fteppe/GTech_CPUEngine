@@ -1,1 +1,1 @@
-target_sources(CPURender PRIVATE shader.cpp terrainShader.cpp blinnPhongShader.cpp)
+target_sources(CPURender PRIVATE shader.cpp terrainShader.cpp blinnPhongShader.cpp skyShader.cpp)

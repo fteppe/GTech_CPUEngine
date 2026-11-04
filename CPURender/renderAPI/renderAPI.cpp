@@ -155,6 +155,29 @@ ResourceHandle<renderResource::Texture> RenderAPI::createTexture(glm::ivec2 dims
 	return handle;
 }
 
+TextureHandle RenderAPI::createCubeMap(glm::ivec2 dimSlice, const std::vector<Color> &up,
+	const std::vector<Color> &down, const std::vector<Color> &left, const std::vector<Color> &right,
+	const std::vector<Color> &front, const std::vector<Color> &back) {
+
+
+	std::vector<Color> concatenatedData; concatenatedData.reserve(up.size() * 6);
+
+
+	concatenatedData.insert(concatenatedData.end(), left.begin(), left.end());
+	concatenatedData.insert(concatenatedData.end(), right.begin(), right.end());
+
+	concatenatedData.insert(concatenatedData.end(), up.begin(), up.end());
+	concatenatedData.insert(concatenatedData.end(), down.begin(), down.end());
+
+	concatenatedData.insert(concatenatedData.end(), front.begin(), front.end());
+	concatenatedData.insert(concatenatedData.end(), back.begin(), back.end());
+
+	auto texturePtr = std::make_unique<renderResource::ColorCubemap>(dimSlice, concatenatedData);
+	auto handle = this->createHandle<renderResource::Texture>();
+	this->textures.emplace(handle, std::move(texturePtr));
+	return handle;
+}
+
 TextureHandle RenderAPI::createFrameBuffer(glm::ivec2 dims, FrameBufferType type) {
 
 	std::unique_ptr<renderResource::Texture> frameBuffer;

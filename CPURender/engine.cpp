@@ -22,13 +22,15 @@
 #include "meshGenerator.h"
 #include "scene.h"
 #include "shaders/blinnPhongShader.h"
+#include "shaders/skyShader.h"
 
 struct PixelData {
 	int width, height;
 	std::vector<Color> imageData;
 };
 
-static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
+static PixelData loadTextureData(const char * filePath) {
+
 	PixelData pixelData;
 	int nbrChannel;
 	constexpr int desiredChannels = 4;
@@ -48,7 +50,23 @@ static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
 		}
 	}
 	free(data);
+	return pixelData;
+}
+
+static TextureHandle loadTexture(const char* filePath, RenderAPI& renderAPI) {
+	PixelData pixelData = loadTextureData(filePath);
 	return renderAPI.createTexture(glm::ivec2(pixelData.width, pixelData.height), pixelData.imageData);
+}
+
+static TextureHandle loadCubemap(RenderAPI& renderAPI, const char* upPath, const char* downPath, const char* leftPath, const char* rightPath, const char* frontPath, const char* backPath) {
+	PixelData up = loadTextureData(upPath);
+	PixelData down = loadTextureData(downPath);
+	PixelData left = loadTextureData(leftPath);
+	PixelData right = loadTextureData(rightPath);
+	PixelData front = loadTextureData(frontPath);
+	PixelData back = loadTextureData(backPath);
+
+	return renderAPI.createCubeMap({up.width, up.height}, up.imageData, down.imageData, left.imageData, right.imageData, front.imageData, back.imageData);
 }
 
 template <typename VS, typename PS>
@@ -120,6 +138,17 @@ void Engine::init(SDL_Window* windowIn) {
 	scene->nodes.push_back(terrainNode);
 	cubeNode.modelMatrix = translate(cubeNode.modelMatrix, glm::vec3(1.,1.,1.));
 	// scene->nodes.push_back(cubeNode);
+
+	skybox = loadCubemap(renderAPI, "Assets/top.jpg", "Assets/bottom.jpg",
+		"Assets/left.jpg", "Assets/right.jpg",
+		"Assets/front.jpg", "Assets/back.jpg");
+
+	Node skyNode;
+	skyNode.shaderProgram = createShaderProgram<SkyVS, SkyPS>(renderAPI);
+	skyNode.textures.push_back(skybox);
+	skyNode.mesh = MeshGenerator::generateCube(renderAPI, true);
+	scene->nodes.push_back(skyNode);
+
 }
 
 void Engine::handleEvent(const SDL_Event &event) {
@@ -187,7 +216,7 @@ void Engine::renderFrame(FinalFrameBuffer &frameBufferOut) {
 
 
 	glm::mat4 view = glm::lookAt(mainCam.pos, mainCam.pos + mainCam.dir, {0.,1.,0.});
-	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 100.f);
+	glm::mat4 projection = glm::perspective<float>(glm::radians(90.f), 4./3, 0.1f, 1000.f);
 	glm::mat4 object(1.);
 
 	object = glm::scale(object, glm::vec3(10.,10.,10.));
