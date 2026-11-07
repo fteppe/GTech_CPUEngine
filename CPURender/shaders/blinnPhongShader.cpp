@@ -22,13 +22,16 @@ Color BlinnPhongPS::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexReference in
 	auto [clipPos, worldPos, normal, uv] = interpolatedVertex.getVertexAttributes<PS_Inputs>();
 	glm::vec3 lightDir = scene().lightDir;
 
+	glm::vec3 viewDir = glm::normalize(worldPos - scene().worldCameraPos);
+	glm::vec3 reflectDir = glm::reflect(viewDir, normal);
+	glm::vec4 skyBoxColor = getTexture(1).sample(reflectDir);
 
-	glm::vec3 viewDir = glm::normalize(scene().worldCameraPos - worldPos);
 	glm::vec3 specularComp = shaderUtils::blinnPhong(normal, viewDir, scene().lightDir, glm::vec3(1.0), 1.f);
 	float lambert = std::max(0.f,glm::dot(-normal, lightDir));
 	glm::vec3 lightIntensity = lambert + specularComp + 0.1f;
 
-	glm::vec4 color = getTexture(0).sample(glm::vec3(uv, 0.f)) * glm::vec4(lightIntensity, 1.0f);
+	glm::vec4 diffuse = getTexture(0).sample(glm::vec3(uv, 0.f));
+	glm::vec4 color = diffuse * glm::vec4(lightIntensity, 1.0f);
 
 	Color col = shaderUtils::ACES_Tonemapping(color);
 	return col;

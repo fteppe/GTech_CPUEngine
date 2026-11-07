@@ -108,6 +108,11 @@ void Engine::init(SDL_Window* windowIn) {
 		{1.,1.}, glm::vec2(0.,0.), {1.,0}
 		});
 
+
+	skybox = loadCubemap(renderAPI, "Assets/top.jpg", "Assets/bottom.jpg",
+		"Assets/left.jpg", "Assets/right.jpg",
+		"Assets/front.jpg", "Assets/back.jpg");
+
 	frameBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Color);
 	depthBuffer = renderAPI.createFrameBuffer({WIDTH, HEIGHT}, FrameBufferType::Depth);
 	vs = renderAPI.createVertexShader<BaseVertexShader>();
@@ -126,6 +131,7 @@ void Engine::init(SDL_Window* windowIn) {
 
 	Node terrainNode;
 	terrainNode.textures.push_back(terrainTex);
+	terrainNode.textures.push_back(skybox);
 	terrainNode.modelMatrix = glm::scale(terrainNode.modelMatrix, glm::vec3(20.f));
 	terrainNode.shaderProgram = terrainData.terrainProgram;
 	terrainNode.mesh = terrainData.mesh;
@@ -134,14 +140,13 @@ void Engine::init(SDL_Window* windowIn) {
 	cubeNode.shaderProgram = blinnPhong;
 	cubeNode.mesh = cubeMesh;
 	cubeNode.textures.push_back(doomHead);
+	cubeNode.textures.push_back(skybox);
+
 	scene->nodes.push_back(cubeNode);
 	scene->nodes.push_back(terrainNode);
 	cubeNode.modelMatrix = translate(cubeNode.modelMatrix, glm::vec3(1.,0.,0.));
-	scene->nodes.push_back(cubeNode);
+	// scene->nodes.push_back(cubeNode);
 
-	skybox = loadCubemap(renderAPI, "Assets/top.jpg", "Assets/bottom.jpg",
-		"Assets/left.jpg", "Assets/right.jpg",
-		"Assets/front.jpg", "Assets/back.jpg");
 
 	Node skyNode;
 	skyNode.shaderProgram = createShaderProgram<SkyVS, SkyPS>(renderAPI);

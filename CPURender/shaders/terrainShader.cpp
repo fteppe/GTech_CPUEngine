@@ -46,7 +46,11 @@ Color TerrainPixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexRefere
 	float matWeightSumInv = 1. / matWeightSum;
 	completeWeight *= matWeightSumInv;
 	glm::vec3 lightDir = scene().lightDir;
-	glm::vec3 viewDir = glm::normalize(scene().worldCameraPos - worldPos);
+	glm::vec3 viewDir = glm::normalize(worldPos - scene().worldCameraPos);
+	glm::vec3 reflectDir = glm::reflect(viewDir, normal);
+
+	glm::vec4 skyBoxColor = getTexture(1).sample(reflectDir);
+
 	glm::vec3 specularComp = shaderUtils::blinnPhong(normal, viewDir, scene().lightDir, glm::vec3(1.0), 1.f);
 
 	glm::vec3 lightIntensity = 0.1f + std::max(0.f, glm::dot(lightDir, -normal)) + specularComp;
@@ -55,7 +59,9 @@ Color TerrainPixelShader::PS_MAIN(glm::ivec2 screenSpaceCoord, ConstVertexRefere
 	glm::vec2 uv = {worldPos.x, worldPos.z};
 	uv = glm::mod(uv, glm::vec2(1.f));
 
-	glm::vec4 colorTex = getTerrainColor(worldPos, completeWeight, getTexture(0));
+	float skyboxIntensity = 0.1;
+
+	glm::vec4 colorTex = getTerrainColor(worldPos, completeWeight, getTexture(0)) * (1-skyboxIntensity) + skyBoxColor *skyboxIntensity;;
 	//lightIntensity = std::abs(lightIntensity - worldPos.x);
 	colorTex *= glm::vec4(lightIntensity, 1.f);
 	Color lightColor = shaderUtils::ACES_Tonemapping(colorTex);
